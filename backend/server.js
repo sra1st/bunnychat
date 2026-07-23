@@ -1,4 +1,3 @@
-
 const http = require('http');
 const https = require('https');
 const WebSocket = require('ws');
@@ -11,61 +10,6 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocket.Server({ server });
 
 const rooms = {};
-const MAX_MESSAGE_SENDERS = 500;
-const HEARTBEAT_INTERVAL = 30000;
-
-var heartbeatInterval = setInterval(function() {
-  wss.clients.forEach(function(ws) {
-    if (ws.isAlive === false) {
-      return ws.terminate();
-    }
-    ws.isAlive = false;
-    ws.ping();
-  });
-}, HEARTBEAT_INTERVAL);
-
-wss.on('close', function() {
-  clearInterval(heartbeatInterval);
-});
-
-function isString(value) {
-  return typeof value === 'string';
-}
-
-function isBoolean(value) {
-  return typeof value === 'boolean';
-}
-
-function isValidName(name) {
-  return isString(name) && name.trim().length >= 1 && name.trim().length <= 20;
-}
-
-function isValidCode(code) {
-  return isString(code) && code.trim().length >= 1 && code.trim().length <= 40;
-}
-
-function isValidText(text) {
-  return isString(text) && text.trim().length > 0 && text.trim().length <= 800;
-}
-
-function isValidMessageId(id) {
-  return isString(id) && id.length > 0 && id.length <= 128;
-}
-
-function isValidEmoji(emoji) {
-  return isString(emoji) && emoji.length > 0 && emoji.length <= 4;
-}
-
-function pruneOldMessageSenders(room) {
-  var keys = Object.keys(room.messageSenders);
-  if (keys.length <= MAX_MESSAGE_SENDERS) return;
-  keys.sort(function(a, b) {
-    return room.messageSenders[a].time - room.messageSenders[b].time;
-  });
-  for (var i = 0; i < keys.length - MAX_MESSAGE_SENDERS; i++) {
-    delete room.messageSenders[keys[i]];
-  }
-}
 
 function getRoom(code) {
   if (!rooms[code]) {
@@ -88,12 +32,7 @@ function scheduleRoomCleanup(roomCode) {
 
 function safeSend(client, payload) {
   if (client && client.readyState === WebSocket.OPEN) {
-    try {
-      client.send(JSON.stringify(payload));
-    } catch (error) {
-      console.error('WebSocket send failed:', error);
-      try { client.terminate(); } catch (e) {}
-    }
+    client.send(JSON.stringify(payload));
   }
 }
 
@@ -141,20 +80,14 @@ wss.on('connection', function(ws) {
   ws.roomCode = null;
   ws.userName = null;
   ws.leaveAnnounced = false;
-  ws.isAlive = true;
-
-  ws.on('pong', function() {
-    ws.isAlive = true;
-  });
 
   ws.on('message', function(data) {
     var msg;
     try { msg = JSON.parse(data.toString()); } catch(e) { return; }
 
     if (msg.type === 'join') {
-      if (!isValidName(msg.name) || !isValidCode(msg.code)) return;
-      ws.roomCode = msg.code.trim();
-      ws.userName = msg.name.trim();
+      ws.roomCode = msg.code;
+      ws.userName = msg.name;
       ws.leaveAnnounced = false;
 
       var room = getRoom(ws.roomCode);
@@ -171,7 +104,7 @@ wss.on('connection', function(ws) {
       // Tell existing users that this person joined
       room.clients.forEach(function(client) {
         if (client !== ws) {
-          safeSend(client, { type: 'system', text: ws.userName + ' hopped in' });
+          safeSend(client, { type: 'system', text: msg.name + ' hopped in' });
         }
       });
 
@@ -187,30 +120,18 @@ wss.on('connection', function(ws) {
     }
 
     if (msg.type === 'typing') {
-      if (!ws.roomCode || !isBoolean(msg.isTyping)) return;
+      if (!ws.roomCode) return;
       broadcast(ws.roomCode, { type: 'typing', name: ws.userName, isTyping: !!msg.isTyping }, ws);
       return;
     }
 
     if (msg.type === 'message' && ws.roomCode) {
-      if (!isValidMessageId(msg.id) || !isValidText(msg.text)) return;
       var room = rooms[ws.roomCode];
       if (!room) return;
 
-      var messageId = msg.id;
-      var time = isString(msg.time) ? msg.time : new Date().toISOString();
-      room.messageSenders[messageId] = { sender: ws, time: Date.now() };
-      pruneOldMessageSenders(room);
-
-      var replyTo = null;
-      if (msg.replyTo && isValidMessageId(msg.replyTo.id) && isString(msg.replyTo.name) && isString(msg.replyTo.text) && isString(msg.replyTo.time)) {
-        replyTo = {
-          id: msg.replyTo.id,
-          name: msg.replyTo.name,
-          text: msg.replyTo.text,
-          time: msg.replyTo.time
-        };
-      }
+      var messageId = msg.id || ('m_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8));
+      var time = msg.time || new Date().toISOString();
+      room.messageSenders[messageId] = ws;
 
       broadcast(ws.roomCode, {
         type: 'message',
@@ -218,29 +139,26 @@ wss.on('connection', function(ws) {
         name: ws.userName,
         text: msg.text,
         time: time,
-        replyTo: replyTo
+        replyTo: msg.replyTo || null
       }, ws);
       return;
     }
 
     if (msg.type === 'reaction' && ws.roomCode) {
-      if (!isValidMessageId(msg.messageId) || !isValidEmoji(msg.emoji)) return;
-      var action = msg.action === 'remove' ? 'remove' : 'add';
       broadcast(ws.roomCode, {
         type: 'reaction',
         messageId: msg.messageId,
         emoji: msg.emoji,
         userName: ws.userName,
-        action: action
+        action: msg.action || 'add'
       }, ws);
       return;
     }
 
-    if (msg.type === 'read' && ws.roomCode && isValidMessageId(msg.id)) {
+    if (msg.type === 'read' && ws.roomCode && msg.id) {
       var currentRoom = rooms[ws.roomCode];
       if (!currentRoom) return;
-      var senderEntry = currentRoom.messageSenders[msg.id];
-      var sender = senderEntry && senderEntry.sender;
+      var sender = currentRoom.messageSenders[msg.id];
       if (sender && sender !== ws) {
         safeSend(sender, { type: 'read', id: msg.id, by: ws.userName });
       }
@@ -280,14 +198,11 @@ server.listen(PORT, function() {
   console.log('Server listening on port ' + PORT);
 });
 
-var keepAliveUrl = process.env.KEEP_ALIVE_URL;
-if (keepAliveUrl) {
-  setInterval(function() {
-    var client = keepAliveUrl.startsWith('https:') ? https : http;
-    client.get(keepAliveUrl, function(res) {
-      console.log('Keep-alive ping:', res.statusCode);
-    }).on('error', function(e) {
-      console.log('Ping error:', e.message);
-    });
-  }, 10 * 60 * 1000);
-}
+// Keep-alive ping every 10 mins to prevent Render free tier spin-down
+setInterval(function() {
+  https.get('https://chat-backend-2ri0.onrender.com', function(res) {
+    console.log('Keep-alive ping:', res.statusCode);
+  }).on('error', function(e) {
+    console.log('Ping error:', e.message);
+  });
+}, 10 * 60 * 1000);
