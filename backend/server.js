@@ -11,6 +11,8 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocket.Server({ server });
 
 const rooms = {};
+const MAX_MESSAGE_SENDERS = 500;
+const HEARTBEAT_INTERVAL = 30000;
 
 var heartbeatInterval = setInterval(function() {
   wss.clients.forEach(function(ws) {
@@ -25,8 +27,6 @@ var heartbeatInterval = setInterval(function() {
 wss.on('close', function() {
   clearInterval(heartbeatInterval);
 });
-const MAX_MESSAGE_SENDERS = 500;
-const HEARTBEAT_INTERVAL = 30000;
 
 function isString(value) {
   return typeof value === 'string';
