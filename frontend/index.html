@@ -39,9 +39,7 @@
     #name-input::-webkit-input-placeholder, #code-input::-webkit-input-placeholder { color: rgba(255,255,255,0.4); }
     #name-input:focus, #code-input:focus { border-color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.25); }
     #join-btn { width: min(260px, 80vw); background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.5); border-radius: 16px; padding: 14px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; -webkit-appearance: none; letter-spacing: 2px; margin-bottom: 10px; margin-top: 4px; flex-shrink: 0; }
-    #join-btn:disabled { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.7); cursor: not-allowed; }
     #join-btn:active { background: rgba(255,255,255,0.38); }
-    .validation-error { font-size: 12px; color: rgba(255,192,192,0.95); margin-bottom: 12px; min-height: 18px; text-align: center; }
     .footnote { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 16px; text-align: center; letter-spacing: 1px; flex-shrink: 0; }
     .footnote a { color: rgba(255,255,255,0.85); text-decoration: underline; }
 
@@ -368,19 +366,19 @@
   <div id="name-screen">
     <img src="bunny.jpg" alt="">
     <h2>bunnychat 🐰💬</h2>
-    <div class="subtitle">no logs | private by default</div>
+    <div class="subtitle">end-to-end decrypted &nbsp;|&nbsp; no logs</div>
     <div class="field-label">your name</div>
     <input type="text" id="name-input" placeholder="enter your name" maxlength="20">
     <div class="field-label">bunny code 🔑</div>
     <input type="text" id="code-input" placeholder="enter or make your secret code" maxlength="40">
     <p style="font-size:10px;color:rgba(255,255,255,0.45);max-width:380px;text-align:center;margin-top:-8px;margin-bottom:8px;letter-spacing:0.5px;">same code = same garden | share it with your bunny 🐇</p>
-    <button type="button" id="join-btn">✦ enter ✦</button>
+    <button id="join-btn">✦ enter ✦</button>
     <p class="footnote">like <a href="https://en.wikipedia.org/wiki/Crypto_AG" target="_blank">Crypto AG</a>, but for bunnies <span style="margin:0 8px;color:rgba(255,255,255,0.9);">✦</span> <a href="how-to.html">how to bunny</a></p>
   </div>
 
   <div id="app">
     <div id="header">
-      <button type="button" id="leave-btn" onclick="leaveChat()" title="hop off 🐇" aria-label="hop off 🐇"><span class="leave-icon">🚪</span><span class="leave-label">hop off 🐇</span></button>
+      <button id="leave-btn" onclick="leaveChat()" title="hop off 🐇" aria-label="hop off 🐇"><span class="leave-icon">🚪</span><span class="leave-label">hop off 🐇</span></button>
       <h1>✦ bunnychat 🐰💬 ✦</h1>
       <div id="status" class="disconnected">connecting...</div>
       <div id="presence"></div>
@@ -390,7 +388,7 @@
     <div id="typing"></div>
     <div id="input-area">
       <textarea id="msg-input" placeholder="say hi!" rows="1"></textarea>
-      <button type="button" id="send-btn" aria-label="send" disabled>
+      <button id="send-btn" aria-label="send">
         <svg viewBox="0 0 100 115" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
           <ellipse cx="31" cy="32" rx="13.5" ry="30" transform="rotate(-10 31 32)"/>
           <ellipse cx="69" cy="32" rx="13.5" ry="30" transform="rotate(10 69 32)"/>
@@ -407,38 +405,7 @@
   </div>
 
   <script>
-    var WS_URL = (function() {
-      if (window.BUNNYCHAT_WS_URL) return window.BUNNYCHAT_WS_URL;
-      var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      return proto + '//' + location.host;
-    })();
-
-    function isValidName(name) {
-      return typeof name === 'string' && name.trim().length >= 1 && name.trim().length <= 20;
-    }
-
-    function isValidCode(code) {
-      return typeof code === 'string' && code.trim().length >= 1 && code.trim().length <= 40;
-    }
-
-    function isValidMessage(text) {
-      return typeof text === 'string' && text.trim().length > 0 && text.trim().length <= 800;
-    }
-
-    function normalizeStoredHistory(rawHistory) {
-      if (!Array.isArray(rawHistory)) return [];
-      return rawHistory.filter(function(item) {
-        if (!item || typeof item !== 'object') return false;
-        if (item.type === 'system') return typeof item.text === 'string';
-        if (item.type === 'message' || item.id) {
-          return typeof item.id === 'string' &&
-                 typeof item.name === 'string' &&
-                 typeof item.text === 'string' &&
-                 typeof item.time === 'string';
-        }
-        return false;
-      });
-    }
+    var WS_URL = 'wss://bunnychat.onrender.com';
 
     var starData = [
       [5,8],[12,22],[20,5],[28,40],[35,15],[42,60],[50,30],[58,10],[65,50],[72,25],
@@ -661,12 +628,9 @@
     // ── end Emoji Reactions ──────────────────────────────────────────────────
 
     function requestNotifPermission() {
-      if (!('Notification' in window)) return;
-      if (Notification.permission === 'default') {
-        Notification.requestPermission().then(function(perm) {
-          notifPermission = perm === 'granted';
-        });
-      } else if (Notification.permission === 'granted') {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission(function(perm) { notifPermission = perm === 'granted'; });
+      } else if ('Notification' in window && Notification.permission === 'granted') {
         notifPermission = true;
       }
     }
@@ -705,7 +669,7 @@
     function loadHistory() {
       try {
         var raw = localStorage.getItem(historyKey());
-        return raw ? normalizeStoredHistory(JSON.parse(raw)) : [];
+        return raw ? JSON.parse(raw) : [];
       } catch(e) {
         return [];
       }
@@ -774,42 +738,14 @@
       showHome();
     }
 
-    function updateJoinState() {
-      var name = document.getElementById('name-input').value.trim();
-      var code = document.getElementById('code-input').value.trim();
-      var joinBtn = document.getElementById('join-btn');
-      var joinError = document.getElementById('join-error');
-
-      if (!isValidName(name)) {
-        joinBtn.disabled = true;
-        joinError.textContent = 'name must be 1-20 characters';
-        return;
-      }
-      if (!isValidCode(code)) {
-        joinBtn.disabled = true;
-        joinError.textContent = 'bunny code must be 1-40 characters';
-        return;
-      }
-      joinBtn.disabled = false;
-      joinError.textContent = '';
-    }
-
-    function updateSendState() {
-      var sendBtn = document.getElementById('send-btn');
-      var hasText = isValidMessage(msgInput.value.trim());
-      sendBtn.disabled = !hasText || !ws || ws.readyState !== 1;
-    }
-
     document.getElementById('join-btn').addEventListener('click', function() {
       var name = document.getElementById('name-input').value.trim();
       var code = document.getElementById('code-input').value.trim();
-      if (!isValidName(name)) { alert('please enter a valid name (1-20 characters)'); return; }
-      if (!isValidCode(code)) { alert('please enter a valid bunny code (1-40 characters)'); return; }
+      if (!name) { alert('please enter your name'); return; }
+      if (!code) { alert('please enter your bunny code'); return; }
       enterChat(name, code);
     });
 
-    document.getElementById('name-input').addEventListener('input', updateJoinState);
-    document.getElementById('code-input').addEventListener('input', updateJoinState);
     document.getElementById('name-input').addEventListener('keydown', function(e) {
       if (e.keyCode === 13) document.getElementById('code-input').focus();
     });
@@ -830,17 +766,9 @@
           addSystemMessage('you hopped in', false);
           hasJoined = true;
         }
-        updateSendState();
       };
       ws.onmessage = function(event) {
-        var data;
-        try {
-          data = JSON.parse(event.data);
-        } catch (e) {
-          console.warn('Invalid WebSocket payload received', e);
-          return;
-        }
-        if (!data || typeof data !== 'object') return;
+        var data = JSON.parse(event.data);
         if (data.type === 'message') {
           addMessage({
             id: data.id,
@@ -890,7 +818,6 @@
         presenceDiv.textContent = '';
         presenceDiv.className = '';
         clearTypingState();
-        updateSendState();
         // Only reconnect if session still exists (user hasn't explicitly left)
         try {
           if (localStorage.getItem('bunnychat_session')) {
@@ -902,7 +829,6 @@
         isConnecting = false;
         statusDiv.textContent = 'uh oh... connection lost!';
         statusDiv.className = 'disconnected';
-        updateSendState();
       };
     }
 
@@ -1019,7 +945,7 @@
 
     function sendMessage() {
       var text = msgInput.value.trim();
-      if (!isValidMessage(text) || !ws || ws.readyState !== 1) return;
+      if (!text || !ws || ws.readyState !== 1) return;
       var id = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
       var time = new Date().toISOString();
       var replyTo = replyTarget ? {
@@ -1044,7 +970,6 @@
       sendTypingState(false);
       if (typingTimer) { clearTimeout(typingTimer); typingTimer = null; }
       clearReplyTarget();
-      updateSendState();
     }
 
     document.getElementById('send-btn').addEventListener('click', sendMessage);
@@ -1062,12 +987,10 @@
         sendTypingState(false);
         if (typingTimer) { clearTimeout(typingTimer); typingTimer = null; }
       }
-      updateSendState();
     });
     msgInput.addEventListener('blur', function() {
       sendTypingState(false);
       if (typingTimer) { clearTimeout(typingTimer); typingTimer = null; }
-      updateSendState();
     });
 
     function addMessage(item, shouldPersist) {
@@ -1159,7 +1082,7 @@
       if (shouldPersist === undefined) shouldPersist = true;
       var div = document.createElement('div');
       div.className = 'system-msg';
-      div.textContent = String(text || '');
+      div.textContent = text;
       messagesDiv.appendChild(div);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
       if (shouldPersist) {
@@ -1182,5 +1105,8 @@
       }
     } catch(e) {}
   </script>
+</body>
+</html>
+
 </body>
 </html>
