@@ -353,11 +353,15 @@
   #header { max-width: 100%; width: 100%; box-sizing: border-box; padding: 40px 16px 20px; }
       #reply-preview { max-width: min(1800px, 98vw); margin-left: auto; margin-right: auto; }
       #typing  { max-width: min(1800px, 98vw); margin-left: auto; margin-right: auto; }
-      /* Wider input bar */
-      #input-area { max-width: min(1800px, 98vw); margin-left: auto; margin-right: auto; }
-      /* More breathing room for messages, tighter horizontal padding */
-      #messages { padding-left: 24px; padding-right: 24px; }
+      /* Keep the desktop texting UI comfortably grouped instead of spanning the full viewport. */
+      #reply-preview,
+      #typing,
+      #input-area { max-width: min(760px, 88vw); margin-left: auto; margin-right: auto; }
+      /* Keep messages in the same visual column as the composer. */
+      #messages { max-width: min(760px, 88vw); width: 100%; margin-left: auto; margin-right: auto; padding-left: 18px; padding-right: 18px; }
       .message { max-width: 44%; }
+      /* Give the desktop composer a little more horizontal breathing room. */
+      #input-area { padding-left: 18px; padding-right: 18px; }
     }
 
     /* ── Reaction button (☺) shown in message-meta ── */
