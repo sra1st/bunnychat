@@ -438,6 +438,30 @@
       -webkit-box-pack: center; -webkit-justify-content: center; justify-content: center;
     }
     #emoji-sheet-grid button:active { background: rgba(255,255,255,0.12); }
+    #desktop-bunny {
+  display: none;
+}
+
+@media (min-width: 680px) {
+  #desktop-bunny {
+    display: block;
+    position: fixed;
+
+    /* Push the transparent padding outside the viewport */
+    right: -52px;
+
+    /* Lower + vertically centered */
+    top: 60%;
+    transform: translateY(-50%);
+
+    width: min(300px, 22vw);
+    height: auto;
+
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
+  }
+}
   </style>
 </head>
 <body>
