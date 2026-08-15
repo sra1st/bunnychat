@@ -358,7 +358,13 @@
       /* Keep the desktop texting UI comfortably grouped instead of spanning the full viewport. */
       #reply-preview,
       #typing,
-      #input-area { max-width: min(760px, 88vw); margin-left: auto; margin-right: auto; }
+      #input-area {
+        width: min(1100px, 92vw) !important;
+        max-width: min(1100px, 92vw) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box;
+      }
       /* Keep messages in the same visual column as the composer. */
       #messages { max-width: min(760px, 88vw); width: 100%; margin-left: auto; margin-right: auto; padding-left: 18px; padding-right: 18px; }
       .message { max-width: 44%; }
@@ -470,9 +476,11 @@
   #reply-preview,
   #typing,
   #input-area {
-    max-width: min(900px, 90vw);
-    margin-left: auto;
-    margin-right: auto;
+    width: min(1100px, 92vw) !important;
+    max-width: min(1100px, 92vw) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box;
   }
 
   #input-area {
@@ -540,6 +548,32 @@
       }
     }
 
+  
+    /* ── FINAL desktop composer width override ── */
+    @media (min-width: 680px) {
+      #reply-preview,
+      #typing,
+      #input-area {
+        width: min(1100px, 92vw) !important;
+        max-width: min(1100px, 92vw) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        box-sizing: border-box !important;
+      }
+      #input-area {
+        padding-left: 18px !important;
+        padding-right: 18px !important;
+      }
+      #messages {
+        max-width: min(1100px, 92vw) !important;
+        width: 100%;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding-left: 18px;
+        padding-right: 18px;
+        box-sizing: border-box;
+      }
+    }
   </style>
 </head>
 <body>
