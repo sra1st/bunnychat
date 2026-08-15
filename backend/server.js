@@ -20,6 +20,10 @@ wss.on('error', function(err) {
 
 const rooms = {};
 
+// How long we hold off announcing a departure, in case it's just a page
+// refresh reconnecting rather than someone actually leaving.
+const RECONNECT_GRACE_MS = 5000;
+
 // ── input limits ────────────────────────────────────────────────────────
 const MAX_NAME_LEN = 20;
 const MAX_CODE_LEN = 40;
@@ -53,10 +57,23 @@ function getRoom(code) {
   if (!rooms[code]) {
     rooms[code] = {
       clients: [],
-      messageSenders: {}
+      messageSenders: {},
+      // Which ws is currently "the" connection for a given clientId.
+      activeByClientId: {},
+      // clientIds whose departure announcement is delayed, in case they
+      // reconnect (e.g. a page refresh) before the grace period ends.
+      pendingLeaves: {}
     };
   }
   return rooms[code];
+}
+
+function clearPendingLeave(room, clientId) {
+  const pending = room.pendingLeaves[clientId];
+  if (pending) {
+    clearTimeout(pending.timer);
+    delete room.pendingLeaves[clientId];
+  }
 }
 
 function safeSend(client, payload) {
@@ -92,25 +109,46 @@ function broadcastPresence(roomCode) {
   });
 }
 
-function removeFromRoom(ws) {
+function removeFromRoom(ws, immediate) {
   if (!ws.roomCode || !rooms[ws.roomCode]) return;
 
   const roomCode = ws.roomCode;
   const room = rooms[roomCode];
 
   room.clients = room.clients.filter(c => c !== ws);
-
-  if (ws.userName) {
-    broadcast(roomCode, {
-      type: 'left',
-      name: ws.userName
-    }, ws);
-  }
-
   broadcastPresence(roomCode);
 
-  if (room.clients.length === 0) {
-    delete rooms[roomCode];
+  const clientId = ws.clientId;
+  const userName = ws.userName;
+  const isCurrentlyActive = !!(clientId && room.activeByClientId[clientId] === ws);
+
+  if (isCurrentlyActive) {
+    delete room.activeByClientId[clientId];
+  }
+
+  if (immediate || !clientId) {
+    // Explicit "hop off", or a connection we have no clientId to track
+    // reconnects for — announce the departure right away.
+    if (clientId) clearPendingLeave(room, clientId);
+    if (userName) {
+      broadcast(roomCode, { type: 'left', name: userName }, ws);
+    }
+    if (room.clients.length === 0) delete rooms[roomCode];
+  } else if (isCurrentlyActive) {
+    // Hold off announcing — this might just be a page refresh reconnecting.
+    room.pendingLeaves[clientId] = {
+      timer: setTimeout(function() {
+        delete room.pendingLeaves[clientId];
+        if (userName) broadcast(roomCode, { type: 'left', name: userName });
+        if (room.clients.length === 0) delete rooms[roomCode];
+      }, RECONNECT_GRACE_MS)
+    };
+  } else {
+    // A newer connection for this identity already took over (the join
+    // arrived before this close was processed) — nothing to announce.
+    if (room.clients.length === 0 && Object.keys(room.pendingLeaves).length === 0) {
+      delete rooms[roomCode];
+    }
   }
 
   ws.roomCode = null;
@@ -146,21 +184,39 @@ wss.on('connection', function(ws, request) {
       ws.roomCode = msg.code;
       ws.userName = msg.name;
       ws.hasJoined = true;
+      ws.clientId = isNonEmptyString(msg.clientId, MAX_ID_LEN) ? msg.clientId : null;
 
       const room = getRoom(ws.roomCode);
+
+      // A reconnect is either: we were mid-way through delaying its
+      // departure announcement, or its previous connection hasn't closed
+      // yet (this new one arrived first) — either way, same identity.
+      let isReconnect = false;
+      if (ws.clientId) {
+        if (room.pendingLeaves[ws.clientId]) {
+          clearPendingLeave(room, ws.clientId);
+          isReconnect = true;
+        }
+        if (room.activeByClientId[ws.clientId]) {
+          isReconnect = true;
+        }
+        room.activeByClientId[ws.clientId] = ws;
+      }
 
       room.clients.push(ws);
 
       broadcastPresence(ws.roomCode);
 
-      room.clients.forEach(function(client) {
-        if (client !== ws) {
-          safeSend(client, {
-            type:'system',
-            text: msg.name + ' hopped in'
-          });
-        }
-      });
+      if (!isReconnect) {
+        room.clients.forEach(function(client) {
+          if (client !== ws) {
+            safeSend(client, {
+              type:'system',
+              text: msg.name + ' hopped in'
+            });
+          }
+        });
+      }
 
       return;
     }
@@ -251,7 +307,7 @@ wss.on('connection', function(ws, request) {
 
 
     if (msg.type === 'leave') {
-      removeFromRoom(ws);
+      removeFromRoom(ws, true);
       return;
     }
 
