@@ -1,0 +1,20 @@
+{
+  "name": "bunnychat",
+  "short_name": "bunnychat",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#1b0b2e",
+  "theme_color": "#1b0b2e",
+  "icons": [
+    {
+      "src": "bunnylogo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "bunnylogo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
