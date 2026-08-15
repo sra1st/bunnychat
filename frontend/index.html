@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#c97ee8">
+  <link rel="icon" type="image/png" href="bunnylogo.png">
   <title>🐰💬</title>
   <meta property="og:title" content="bunnychat 🐰💬">
   <meta property="og:description" content="for paranoid bunnies to discuss their secret carrot stash">
@@ -34,7 +36,7 @@
     #name-screen img { width: min(200px, 40vw); margin-bottom: 8px; display: block; flex-shrink: 0; filter: drop-shadow(0 10px 24px rgba(44,5,72,0.25)); }
     #name-screen h2 { font-family: 'Nunito', sans-serif; font-size: clamp(24px, 5vw, 38px); color: #fff; margin-bottom: 6px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 0 30px rgba(255,255,255,0.3); text-align: center; flex-shrink: 0; }
     #name-screen .subtitle { font-size: clamp(11px, 2vw, 13px); color: rgba(255,255,255,0.6); margin-bottom: 24px; text-align: center; letter-spacing: 1px; flex-shrink: 0; }
-    .field-label { font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: lowercase; margin-bottom: 6px; width: 100%; max-width: 380px; text-align: left; flex-shrink: 0; }
+    .field-label { display: block; font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: lowercase; margin-bottom: 6px; width: 100%; max-width: 380px; text-align: left; flex-shrink: 0; }
     #name-input, #code-input { width: 100%; max-width: 380px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 16px; padding: 13px 18px; color: #fff; font-size: 15px; outline: none; -webkit-appearance: none; margin-bottom: 14px; flex-shrink: 0; }
     #name-input::-webkit-input-placeholder, #code-input::-webkit-input-placeholder { color: rgba(255,255,255,0.4); }
     #name-input:focus, #code-input:focus { border-color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.25); }
@@ -367,9 +369,9 @@
     <img src="bunnylogo.png" alt="bunnychat">
     <h2>bunnychat 💬</h2>
     <div class="subtitle">end-to-end decrypted &nbsp;|&nbsp; no logs</div>
-    <div class="field-label">your name</div>
+    <label class="field-label" for="name-input">your name</label>
     <input type="text" id="name-input" placeholder="enter your name" maxlength="20">
-    <div class="field-label">bunny code 🔑</div>
+    <label class="field-label" for="code-input">bunny code 🔑</label>
     <input type="text" id="code-input" placeholder="enter or make your secret code" maxlength="40">
     <p style="font-size:10px;color:rgba(255,255,255,0.45);max-width:380px;text-align:center;margin-top:-8px;margin-bottom:8px;letter-spacing:0.5px;">same code = same garden | share it with your bunny 🐇</p>
     <button id="join-btn">✦ enter ✦</button>
@@ -605,7 +607,7 @@
         var pill = document.createElement('button');
         pill.className = 'reaction-pill' + (users.indexOf(userName) >= 0 ? ' reacted' : '');
         pill.title = users.join(', ');
-        pill.innerHTML = emoji + ' <span style="font-size:11px;opacity:0.85">' + users.length + '</span>';
+        pill.innerHTML = escapeHtml(emoji) + ' <span style="font-size:11px;opacity:0.85">' + users.length + '</span>';
         pill.addEventListener('click', (function(e) { return function() { toggleReaction(messageId, e); }; })(emoji));
         pillsDiv.appendChild(pill);
       });

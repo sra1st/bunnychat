@@ -21,8 +21,7 @@ function getRoom(code) {
   if (!rooms[code]) {
     rooms[code] = {
       clients: [],
-      messageSenders: {},
-      cleanupTimer: null
+      messageSenders: {}
     };
   }
   return rooms[code];
@@ -73,6 +72,10 @@ function removeFromRoom(ws) {
   }
 
   broadcastPresence(roomCode);
+
+  if (room.clients.length === 0) {
+    delete rooms[roomCode];
+  }
 
   ws.roomCode = null;
 }
