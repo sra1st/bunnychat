@@ -44,7 +44,8 @@
     .footnote a { color: rgba(255,255,255,0.85); text-decoration: underline; }
 
     /* CHAT SCREEN */
-    #app { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-orient: vertical; -webkit-flex-direction: column; flex-direction: column; max-width: 600px; margin: 0 auto; z-index: 1; }
+    #app { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: none; -webkit-box-orient: vertical; -webkit-flex-direction: column; flex-direction: column; max-width: 600px; margin: 0 auto; z-index: 1; }
+    #app.visible { display: -webkit-box; display: -webkit-flex; display: flex; }
 
     #header { padding: 12px 16px 6px; text-align: center; -webkit-flex-shrink: 0; flex-shrink: 0; position: relative; }
     #leave-btn {
@@ -364,7 +365,7 @@
 
   <div id="name-screen">
     <img src="bunnylogo.png" alt="bunnychat">
-    <h2>bunnychat 🐰💬</h2>
+    <h2>bunnychat 💬</h2>
     <div class="subtitle">end-to-end decrypted &nbsp;|&nbsp; no logs</div>
     <div class="field-label">your name</div>
     <input type="text" id="name-input" placeholder="enter your name" maxlength="20">
@@ -378,7 +379,7 @@
   <div id="app">
     <div id="header">
       <button id="leave-btn" onclick="leaveChat()" title="hop off 🐇" aria-label="hop off 🐇"><span class="leave-icon">🚪</span><span class="leave-label">hop off 🐇</span></button>
-      <h1>✦ bunnychat 🐰💬 ✦</h1>
+      <h1>✦ bunnychat 💬 ✦</h1>
       <div id="status" class="disconnected">connecting...</div>
       <div id="presence"></div>
     </div>
@@ -643,9 +644,11 @@
 
     function showChat() {
       document.getElementById('name-screen').style.display = 'none';
+      document.getElementById('app').classList.add('visible');
     }
 
     function showHome() {
+      document.getElementById('app').classList.remove('visible');
       document.getElementById('name-screen').style.display = 'flex';
     }
 
