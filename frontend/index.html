@@ -50,7 +50,7 @@
       display: -webkit-box; display: -webkit-flex; display: flex;
       -webkit-box-align: center; -webkit-align-items: center; align-items: center;
       -webkit-box-pack: center; -webkit-justify-content: center; justify-content: center;
-      margin-bottom: 10px;
+      margin-bottom: 22px;
       flex-shrink: 0;
     }
     .logo-wrap::before {
@@ -74,13 +74,13 @@
     #name-screen h2 { font-family: 'Nunito', sans-serif; font-size: clamp(22px, 6vw, 36px); color: #fff; margin-bottom: 6px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 0 30px rgba(255,255,255,0.3); text-align: center; flex-shrink: 0; }
     #name-screen .subtitle { font-size: clamp(11px, 2.4vw, 13px); color: rgba(255,255,255,0.6); margin-bottom: clamp(18px, 5vw, 24px); text-align: center; letter-spacing: 1px; flex-shrink: 0; }
     .field-label { display: block; font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: lowercase; margin-bottom: 6px; width: 100%; text-align: left; flex-shrink: 0; }
-    #name-input, #code-input { width: 100%; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 16px; padding: clamp(11px, 3vw, 13px) clamp(14px, 4vw, 18px); color: #fff; font-size: clamp(14px, 3.6vw, 15px); outline: none; -webkit-appearance: none; margin-bottom: 14px; flex-shrink: 0; }
+    #name-input, #code-input { width: 100%; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 16px; padding: clamp(11px, 3vw, 13px) clamp(14px, 4vw, 18px); color: #fff; font-size: max(16px, clamp(14px, 3.6vw, 15px)); outline: none; -webkit-appearance: none; margin-bottom: 14px; flex-shrink: 0; }
     #name-input::-webkit-input-placeholder, #code-input::-webkit-input-placeholder { color: rgba(255,255,255,0.4); }
     #name-input:focus, #code-input:focus { border-color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.25); }
     .code-hint { font-size: 10px; color: rgba(255,255,255,0.45); width: 100%; text-align: center; margin-top: -8px; margin-bottom: 8px; letter-spacing: 0.5px; }
     #join-btn { width: min(260px, 100%); background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.5); border-radius: 16px; padding: 14px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; -webkit-appearance: none; letter-spacing: 2px; margin-bottom: 10px; margin-top: 4px; flex-shrink: 0; }
     #join-btn:active { background: rgba(255,255,255,0.38); }
-    .footnote { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 16px; text-align: center; letter-spacing: 1px; flex-shrink: 0; }
+    .footnote { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 30px; text-align: center; letter-spacing: 1px; flex-shrink: 0; }
     .footnote a { color: rgba(255,255,255,0.85); text-decoration: underline; }
 
     /* CHAT SCREEN */
@@ -281,7 +281,7 @@
     }
 
     #input-area { padding: 10px 14px 16px; display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: end; -webkit-align-items: flex-end; align-items: flex-end; -webkit-flex-shrink: 0; flex-shrink: 0; gap: 10px; }
-    #msg-input { -webkit-box-flex: 1; -webkit-flex: 1; flex: 1; background: rgba(80,20,120,0.55); border: 1px solid rgba(255,255,255,0.35); border-radius: 24px; padding: 11px 18px; color: #fff; font-size: 15px; outline: none; -webkit-appearance: none; resize: none; overflow-y: hidden; min-height: 44px; max-height: 130px; line-height: 1.45; font-family: inherit; display: block; }
+    #msg-input { -webkit-box-flex: 1; -webkit-flex: 1; flex: 1; background: rgba(80,20,120,0.55); border: 1px solid rgba(255,255,255,0.35); border-radius: 24px; padding: 11px 18px; color: #fff; font-size: 16px; outline: none; -webkit-appearance: none; resize: none; overflow-y: hidden; min-height: 44px; max-height: 130px; line-height: 1.45; font-family: inherit; display: block; }
     #msg-input::-webkit-input-placeholder { color: rgba(255,255,255,0.5); }
     #send-btn { background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.5); border-radius: 50%; width: 44px; height: 44px; color: rgba(48,8,86,0.92); font-size: 20px; cursor: pointer; -webkit-flex-shrink: 0; flex-shrink: 0; -webkit-appearance: none; display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: center; -webkit-align-items: center; align-items: center; -webkit-box-pack: center; -webkit-justify-content: center; justify-content: center; padding: 0; }
     #send-btn:active { background: rgba(255,255,255,0.45); }
@@ -412,12 +412,16 @@
       <div class="logo-wrap">
         <img src="bunnylogo.png" alt="bunnychat">
       </div>
-      <div class="subtitle">🥕 bunnychat | chat about your secret carrot stash 🥕</div>
+      <div id="storage-warning" style="display:none; font-size:11px; color:rgba(255,80,80,0.9); background:rgba(255,255,255,0.15); border-radius:12px; padding:8px 12px; margin-bottom:14px; text-align:center; letter-spacing:0.3px;">
+        ⚠ this browser is blocking site storage, so refreshing will drop you back here instead of reconnecting. check Settings → Safari → Privacy & Security, or turn off Private Browsing.
+      </div>
+      <h2> bunnychat </h2>
+      <div class="subtitle">🥕 where bunnies discuss their carrot&nbsp;stash 🥕</div>
       <label class="field-label" for="name-input">your name</label>
       <input type="text" id="name-input" placeholder="enter your name" maxlength="20">
       <label class="field-label" for="code-input">bunny code 🔑</label>
       <input type="text" id="code-input" placeholder="enter or make your secret code" maxlength="40">
-      <p class="code-hint">same code = same garden | share it with your bunny 🐇</p>
+      <p class="code-hint">same code = same garden | share it with your&nbsp;bunny 🐇</p>
       <button id="join-btn">✦ enter ✦</button>
       <footer class="footnote"><a href="how-to.html">✦ how to bunny 💭✦</a></footer>
     </div>
@@ -426,7 +430,7 @@
   <div id="app">
     <div id="header">
       <button id="leave-btn" onclick="leaveChat()" title="hop off 🐇" aria-label="hop off 🐇"><span class="leave-icon">🚪</span><span class="leave-label">hop off 🐇</span></button>
-      <h1>✦ 🐇💬 ✦</h1>
+      <h1>✦ 🗫🐇 ✦</h1>
       <div id="status" class="disconnected">connecting...</div>
       <div id="presence"></div>
     </div>
@@ -488,10 +492,14 @@
     // just joined" — without it, a refresh briefly looks like a leave+join.
     function getOrCreateClientId() {
       try {
-        var existing = localStorage.getItem('bunnychat_client_id');
+        // sessionStorage (not localStorage) is deliberate: it's unique per
+        // TAB, so two tabs of the same browser get different identities —
+        // but it still survives a same-tab refresh, which is exactly the
+        // "is this a reconnect or a different person" signal the server needs.
+        var existing = sessionStorage.getItem('bunnychat_client_id');
         if (existing) return existing;
         var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('c_' + Date.now() + '_' + Math.random().toString(36).slice(2));
-        localStorage.setItem('bunnychat_client_id', id);
+        sessionStorage.setItem('bunnychat_client_id', id);
         return id;
       } catch(e) {
         return 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2);
@@ -1154,14 +1162,33 @@
     }
 
     // On load — auto-rejoin if session exists
-    try {
-      var saved = JSON.parse(localStorage.getItem('bunnychat_session'));
-      if (saved && saved.name && saved.code) {
-        document.getElementById('name-input').value = saved.name;
-        document.getElementById('code-input').value = saved.code;
-        enterChat(saved.name, saved.code);
+    (function() {
+      var storageWorks = false;
+      try {
+        var probeKey = '__bunnychat_probe__';
+        localStorage.setItem(probeKey, '1');
+        storageWorks = localStorage.getItem(probeKey) === '1';
+        localStorage.removeItem(probeKey);
+      } catch (e) {
+        storageWorks = false;
       }
-    } catch(e) {}
+      if (!storageWorks) {
+        console.warn('bunnychat: localStorage is unavailable — sessions will not survive a refresh. This is usually a browser privacy setting (Private Browsing, or Safari\'s "Block All Cookies"), not a site bug.');
+        var warningEl = document.getElementById('storage-warning');
+        if (warningEl) warningEl.style.display = 'block';
+        return;
+      }
+      try {
+        var saved = JSON.parse(localStorage.getItem('bunnychat_session'));
+        if (saved && saved.name && saved.code) {
+          document.getElementById('name-input').value = saved.name;
+          document.getElementById('code-input').value = saved.code;
+          enterChat(saved.name, saved.code);
+        }
+      } catch(e) {
+        console.warn('bunnychat: failed to restore session', e);
+      }
+    })();
   </script>
 </body>
 </html>
