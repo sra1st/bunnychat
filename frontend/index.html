@@ -438,20 +438,22 @@
       -webkit-box-pack: center; -webkit-justify-content: center; justify-content: center;
     }
     #emoji-sheet-grid button:active { background: rgba(255,255,255,0.12); }
-    #desktop-bunny {
+    /* ── Desktop decorative bunny ── */
+#desktop-bunny {
   display: none;
 }
 
 @media (min-width: 680px) {
+
   #desktop-bunny {
     display: block;
     position: fixed;
 
-    /* Push the transparent padding outside the viewport */
+    /* flush with the right edge */
     right: -52px;
 
-    /* Lower + vertically centered */
-    top: 60%;
+    /* slightly higher */
+    top: 55%;
     transform: translateY(-50%);
 
     width: min(300px, 22vw);
@@ -460,6 +462,30 @@
     z-index: 2;
     pointer-events: none;
     user-select: none;
+  }
+
+  /* Desktop composer */
+  #reply-preview,
+  #typing,
+  #input-area {
+    max-width: min(900px, 90vw);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  #input-area {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  /* Keep messages aligned with the wider composer */
+  #messages {
+    max-width: min(900px, 90vw);
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 18px;
+    padding-right: 18px;
   }
 }
   </style>
