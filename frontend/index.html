@@ -487,35 +487,46 @@
     padding-left: 18px;
     padding-right: 18px;
   }
-  /* ── Compact mobile login form ── */
+  /* ── Smaller mobile login card ── */
 @media (max-width: 679px) {
-  .home-shell {
-    max-width: 340px;
-  }
-
-  .form-block {
-    padding: 16px 16px 18px;
+  #name-screen .form-block {
+    width: calc(100% - 32px) !important;
+    max-width: 340px !important;
+    box-sizing: border-box;
+    padding: 16px 16px 18px !important;
     border-radius: 20px;
   }
 
-  #name-input,
-  #code-input {
-    padding: 10px 14px;
-    margin-bottom: 10px;
+  #name-screen .brand-block {
+    margin-bottom: 28px !important;
   }
 
-  .code-hint {
-    margin-top: -5px;
-    margin-bottom: 6px;
+  #name-screen .logo-wrap {
+    width: min(112px, 30vw) !important;
+    margin-bottom: 10px !important;
   }
 
-  #join-btn {
-    padding: 11px;
-    margin-top: 2px;
+  #name-screen h2 {
+    font-size: clamp(26px, 7vw, 38px) !important;
+    margin-bottom: 5px !important;
   }
 
-  .footnote {
-    margin-top: 18px;
+  #name-screen .subtitle {
+    font-size: 10px !important;
+  }
+
+  #name-screen #name-input,
+  #name-screen #code-input {
+    padding: 10px 14px !important;
+    margin-bottom: 10px !important;
+  }
+
+  #name-screen #join-btn {
+    padding: 11px !important;
+  }
+
+  #name-screen .footnote {
+    margin-top: 18px !important;
   }
 }
 }
