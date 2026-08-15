@@ -8,7 +8,10 @@ const server = http.createServer((req, res) => {
 
 const wss = new WebSocket.Server({
   server: server,
-  clientTracking: true
+  clientTracking: true,
+  // Reject any single WS frame bigger than this — stops one client from
+  // flooding the process (and every peer's bandwidth) with giant payloads.
+  maxPayload: 64 * 1024
 });
 
 wss.on('error', function(err) {
@@ -16,6 +19,35 @@ wss.on('error', function(err) {
 });
 
 const rooms = {};
+
+// ── input limits ────────────────────────────────────────────────────────
+const MAX_NAME_LEN = 20;
+const MAX_CODE_LEN = 40;
+const MAX_TEXT_LEN = 2000;
+const MAX_EMOJI_LEN = 32; // generous enough for multi-codepoint/ZWJ emoji
+const MAX_ID_LEN = 128;
+
+function isNonEmptyString(v, maxLen) {
+  return typeof v === 'string' && v.length > 0 && v.length <= maxLen;
+}
+
+function isString(v, maxLen) {
+  return typeof v === 'string' && v.length <= maxLen;
+}
+
+// Only pass through the handful of primitive fields we expect on a
+// replyTo object, so a malformed/malicious payload can't inject
+// arbitrary nested data into what gets broadcast and stored.
+function sanitizeReplyTo(replyTo) {
+  if (!replyTo || typeof replyTo !== 'object') return null;
+  if (!isNonEmptyString(replyTo.id, MAX_ID_LEN)) return null;
+  return {
+    id: replyTo.id,
+    name: isString(replyTo.name, MAX_NAME_LEN) ? replyTo.name : '',
+    text: isString(replyTo.text, MAX_TEXT_LEN) ? replyTo.text : '',
+    time: isString(replyTo.time, 64) ? replyTo.time : ''
+  };
+}
 
 function getRoom(code) {
   if (!rooms[code]) {
@@ -29,7 +61,11 @@ function getRoom(code) {
 
 function safeSend(client, payload) {
   if (client && client.readyState === WebSocket.OPEN) {
-    client.send(JSON.stringify(payload));
+    try {
+      client.send(JSON.stringify(payload));
+    } catch (e) {
+      console.log('SEND ERROR:', e.message);
+    }
   }
 }
 
@@ -86,6 +122,7 @@ wss.on('connection', function(ws, request) {
 
   ws.roomCode = null;
   ws.userName = null;
+  ws.hasJoined = false;
 
   ws.on('message', function(data) {
 
@@ -97,11 +134,18 @@ wss.on('connection', function(ws, request) {
       return;
     }
 
+    if (!msg || typeof msg !== 'object' || typeof msg.type !== 'string') return;
+
 
     if (msg.type === 'join') {
 
+      if (ws.hasJoined) return; // one join per connection
+      if (!isNonEmptyString(msg.name, MAX_NAME_LEN)) return;
+      if (!isNonEmptyString(msg.code, MAX_CODE_LEN)) return;
+
       ws.roomCode = msg.code;
       ws.userName = msg.name;
+      ws.hasJoined = true;
 
       const room = getRoom(ws.roomCode);
 
@@ -139,6 +183,8 @@ wss.on('connection', function(ws, request) {
     if (msg.type === 'message') {
 
       if (!ws.roomCode) return;
+      if (!isNonEmptyString(msg.text, MAX_TEXT_LEN)) return;
+      if (msg.id !== undefined && !isNonEmptyString(msg.id, MAX_ID_LEN)) return;
 
       const id = msg.id || (
         'm_' +
@@ -157,7 +203,7 @@ wss.on('connection', function(ws, request) {
         name:ws.userName,
         text:msg.text,
         time:msg.time || new Date().toISOString(),
-        replyTo:msg.replyTo || null
+        replyTo: sanitizeReplyTo(msg.replyTo)
       }, ws);
 
       return;
@@ -167,13 +213,16 @@ wss.on('connection', function(ws, request) {
     if (msg.type === 'reaction') {
 
       if (!ws.roomCode) return;
+      if (!isNonEmptyString(msg.messageId, MAX_ID_LEN)) return;
+      if (!isNonEmptyString(msg.emoji, MAX_EMOJI_LEN)) return;
+      const action = msg.action === 'remove' ? 'remove' : 'add';
 
       broadcast(ws.roomCode, {
         type:'reaction',
         messageId:msg.messageId,
         emoji:msg.emoji,
         userName:ws.userName,
-        action:msg.action || 'add'
+        action:action
       }, ws);
 
       return;
@@ -183,6 +232,7 @@ wss.on('connection', function(ws, request) {
     if (msg.type === 'read') {
 
       if (!ws.roomCode) return;
+      if (!isNonEmptyString(msg.id, MAX_ID_LEN)) return;
 
       const room = rooms[ws.roomCode];
 

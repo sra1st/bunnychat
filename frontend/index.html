@@ -31,16 +31,54 @@
       -webkit-box-align: center; -webkit-align-items: center; align-items: center;
       -webkit-box-pack: center; -webkit-justify-content: center; justify-content: center;
       overflow-y: auto; -webkit-overflow-scrolling: touch;
-      padding: 32px 24px; z-index: 100;
+      padding: clamp(20px, 6vw, 32px) clamp(16px, 5vw, 24px);
+      z-index: 100;
     }
-    #name-screen img { width: min(200px, 40vw); margin-bottom: 8px; display: block; flex-shrink: 0; filter: drop-shadow(0 10px 24px rgba(44,5,72,0.25)); }
-    #name-screen h2 { font-family: 'Nunito', sans-serif; font-size: clamp(24px, 5vw, 38px); color: #fff; margin-bottom: 6px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 0 30px rgba(255,255,255,0.3); text-align: center; flex-shrink: 0; }
-    #name-screen .subtitle { font-size: clamp(11px, 2vw, 13px); color: rgba(255,255,255,0.6); margin-bottom: 24px; text-align: center; letter-spacing: 1px; flex-shrink: 0; }
-    .field-label { display: block; font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: lowercase; margin-bottom: 6px; width: 100%; max-width: 380px; text-align: left; flex-shrink: 0; }
-    #name-input, #code-input { width: 100%; max-width: 380px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 16px; padding: 13px 18px; color: #fff; font-size: 15px; outline: none; -webkit-appearance: none; margin-bottom: 14px; flex-shrink: 0; }
+    /* Single shell keeps every element on one consistent max-width and
+       scales fluidly from small phones up to large desktop screens. */
+    .home-shell {
+      width: 100%;
+      max-width: 380px;
+      display: -webkit-box; display: -webkit-flex; display: flex;
+      -webkit-box-orient: vertical; -webkit-flex-direction: column; flex-direction: column;
+      -webkit-box-align: center; -webkit-align-items: center; align-items: center;
+    }
+    .logo-wrap {
+      position: relative;
+      width: min(128px, 34vw);
+      aspect-ratio: 1 / 1;
+      display: -webkit-box; display: -webkit-flex; display: flex;
+      -webkit-box-align: center; -webkit-align-items: center; align-items: center;
+      -webkit-box-pack: center; -webkit-justify-content: center; justify-content: center;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+    .logo-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -32%;
+      background: radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.2) 45%, rgba(255,255,255,0) 72%);
+      filter: blur(14px);
+      border-radius: 50%;
+      z-index: 0;
+      animation: logoGlow 3.2s ease-in-out infinite;
+    }
+    @keyframes logoGlow {
+      0%, 100% { opacity: 0.7; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.08); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .logo-wrap::before { animation: none; }
+    }
+    .logo-wrap img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 8px 20px rgba(44,5,72,0.3)); }
+    #name-screen h2 { font-family: 'Nunito', sans-serif; font-size: clamp(22px, 6vw, 36px); color: #fff; margin-bottom: 6px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 0 30px rgba(255,255,255,0.3); text-align: center; flex-shrink: 0; }
+    #name-screen .subtitle { font-size: clamp(11px, 2.4vw, 13px); color: rgba(255,255,255,0.6); margin-bottom: clamp(18px, 5vw, 24px); text-align: center; letter-spacing: 1px; flex-shrink: 0; }
+    .field-label { display: block; font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: lowercase; margin-bottom: 6px; width: 100%; text-align: left; flex-shrink: 0; }
+    #name-input, #code-input { width: 100%; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 16px; padding: clamp(11px, 3vw, 13px) clamp(14px, 4vw, 18px); color: #fff; font-size: clamp(14px, 3.6vw, 15px); outline: none; -webkit-appearance: none; margin-bottom: 14px; flex-shrink: 0; }
     #name-input::-webkit-input-placeholder, #code-input::-webkit-input-placeholder { color: rgba(255,255,255,0.4); }
     #name-input:focus, #code-input:focus { border-color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.25); }
-    #join-btn { width: min(260px, 80vw); background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.5); border-radius: 16px; padding: 14px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; -webkit-appearance: none; letter-spacing: 2px; margin-bottom: 10px; margin-top: 4px; flex-shrink: 0; }
+    .code-hint { font-size: 10px; color: rgba(255,255,255,0.45); width: 100%; text-align: center; margin-top: -8px; margin-bottom: 8px; letter-spacing: 0.5px; }
+    #join-btn { width: min(260px, 100%); background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.5); border-radius: 16px; padding: 14px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; -webkit-appearance: none; letter-spacing: 2px; margin-bottom: 10px; margin-top: 4px; flex-shrink: 0; }
     #join-btn:active { background: rgba(255,255,255,0.38); }
     .footnote { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 16px; text-align: center; letter-spacing: 1px; flex-shrink: 0; }
     .footnote a { color: rgba(255,255,255,0.85); text-decoration: underline; }
@@ -366,16 +404,20 @@
   <div id="stars"></div>
 
   <div id="name-screen">
-    <img src="bunnylogo.png" alt="bunnychat">
-    <h2>bunnychat 💬</h2>
-    <div class="subtitle">end-to-end decrypted &nbsp;|&nbsp; no logs</div>
-    <label class="field-label" for="name-input">your name</label>
-    <input type="text" id="name-input" placeholder="enter your name" maxlength="20">
-    <label class="field-label" for="code-input">bunny code 🔑</label>
-    <input type="text" id="code-input" placeholder="enter or make your secret code" maxlength="40">
-    <p style="font-size:10px;color:rgba(255,255,255,0.45);max-width:380px;text-align:center;margin-top:-8px;margin-bottom:8px;letter-spacing:0.5px;">same code = same garden | share it with your bunny 🐇</p>
-    <button id="join-btn">✦ enter ✦</button>
-    <p class="footnote">like <a href="https://en.wikipedia.org/wiki/Crypto_AG" target="_blank">Crypto AG</a>, but for bunnies <span style="margin:0 8px;color:rgba(255,255,255,0.9);">✦</span> <a href="how-to.html">how to bunny</a></p>
+    <div class="home-shell">
+      <div class="logo-wrap">
+        <img src="bunnylogo.png" alt="bunnychat">
+      </div>
+      <h2>bunnychat 💬</h2>
+      <div class="subtitle">end-to-end decrypted &nbsp;|&nbsp; no logs</div>
+      <label class="field-label" for="name-input">your name</label>
+      <input type="text" id="name-input" placeholder="enter your name" maxlength="20">
+      <label class="field-label" for="code-input">bunny code 🔑</label>
+      <input type="text" id="code-input" placeholder="enter or make your secret code" maxlength="40">
+      <p class="code-hint">same code = same garden | share it with your bunny 🐇</p>
+      <button id="join-btn">✦ enter ✦</button>
+      <p class="footnote">like <a href="https://en.wikipedia.org/wiki/Crypto_AG" target="_blank">Crypto AG</a>, but for bunnies <span style="margin:0 8px;color:rgba(255,255,255,0.9);">✦</span> <a href="how-to.html">how to bunny</a></p>
+    </div>
   </div>
 
   <div id="app">
@@ -389,7 +431,7 @@
     <div id="reply-preview"></div>
     <div id="typing"></div>
     <div id="input-area">
-      <textarea id="msg-input" placeholder="say hi!" rows="1"></textarea>
+      <textarea id="msg-input" placeholder="say hi!" rows="1" maxlength="2000"></textarea>
       <button id="send-btn" aria-label="send">
         <svg viewBox="0 0 100 115" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
           <ellipse cx="31" cy="32" rx="13.5" ry="30" transform="rotate(-10 31 32)"/>
