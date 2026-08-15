@@ -11,7 +11,7 @@
   <meta property="og:url" content="https://bunnychat.netlify.app">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://bunnychat.netlify.app/preview.png">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; -webkit-box-sizing: border-box; box-sizing: border-box; }
     html, body { height: 100%; overflow: hidden; }
@@ -43,6 +43,25 @@
       -webkit-box-orient: vertical; -webkit-flex-direction: column; flex-direction: column;
       -webkit-box-align: center; -webkit-align-items: center; align-items: center;
     }
+    /* Brand zone: logo + wordmark + tagline, tightly grouped */
+    .brand-block {
+      display: -webkit-box; display: -webkit-flex; display: flex;
+      -webkit-box-orient: vertical; -webkit-flex-direction: column; flex-direction: column;
+      -webkit-box-align: center; -webkit-align-items: center; align-items: center;
+      width: 100%;
+      margin-bottom: clamp(36px, 9vw, 52px);
+    }
+    /* Form zone: sits in its own soft card, clearly separated from the brand above */
+    .form-block {
+      width: 100%;
+      display: -webkit-box; display: -webkit-flex; display: flex;
+      -webkit-box-orient: vertical; -webkit-flex-direction: column; flex-direction: column;
+      -webkit-box-align: center; -webkit-align-items: center; align-items: center;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      padding: clamp(20px, 5vw, 26px) clamp(18px, 5vw, 22px);
+    }
     .logo-wrap {
       position: relative;
       width: min(128px, 34vw);
@@ -50,7 +69,7 @@
       display: -webkit-box; display: -webkit-flex; display: flex;
       -webkit-box-align: center; -webkit-align-items: center; align-items: center;
       -webkit-box-pack: center; -webkit-justify-content: center; justify-content: center;
-      margin-bottom: 22px;
+      margin-bottom: 14px;
       flex-shrink: 0;
     }
     .logo-wrap::before {
@@ -71,14 +90,27 @@
       .logo-wrap::before { animation: none; }
     }
     .logo-wrap img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 8px 20px rgba(44,5,72,0.3)); }
-    #name-screen h2 { font-family: 'Nunito', sans-serif; font-size: clamp(22px, 6vw, 36px); color: #fff; margin-bottom: 6px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 0 30px rgba(255,255,255,0.3); text-align: center; flex-shrink: 0; }
-    #name-screen .subtitle { font-size: clamp(11px, 2.4vw, 13px); color: rgba(255,255,255,0.6); margin-bottom: clamp(18px, 5vw, 24px); text-align: center; letter-spacing: 1px; flex-shrink: 0; }
+    #name-screen h2 {
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      font-size: clamp(28px, 8vw, 44px);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      text-align: center;
+      flex-shrink: 0;
+      background: linear-gradient(180deg, #ffffff 0%, #f3d9ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 22px rgba(255,255,255,0.35));
+    }
+    #name-screen .subtitle { font-size: clamp(11px, 2.4vw, 13px); color: rgba(255,255,255,0.6); text-align: center; letter-spacing: 1px; flex-shrink: 0; }
     .field-label { display: block; font-size: 11px; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: lowercase; margin-bottom: 6px; width: 100%; text-align: left; flex-shrink: 0; }
     #name-input, #code-input { width: 100%; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 16px; padding: clamp(11px, 3vw, 13px) clamp(14px, 4vw, 18px); color: #fff; font-size: max(16px, clamp(14px, 3.6vw, 15px)); outline: none; -webkit-appearance: none; margin-bottom: 14px; flex-shrink: 0; }
     #name-input::-webkit-input-placeholder, #code-input::-webkit-input-placeholder { color: rgba(255,255,255,0.4); }
     #name-input:focus, #code-input:focus { border-color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.25); }
     .code-hint { font-size: 10px; color: rgba(255,255,255,0.45); width: 100%; text-align: center; margin-top: -8px; margin-bottom: 8px; letter-spacing: 0.5px; }
-    #join-btn { width: min(260px, 100%); background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.5); border-radius: 16px; padding: 14px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; -webkit-appearance: none; letter-spacing: 2px; margin-bottom: 10px; margin-top: 4px; flex-shrink: 0; }
+    #join-btn { width: min(260px, 100%); background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.5); border-radius: 16px; padding: 14px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; -webkit-appearance: none; letter-spacing: 2px; margin-bottom: 0; margin-top: 4px; flex-shrink: 0; }
     #join-btn:active { background: rgba(255,255,255,0.38); }
     .footnote { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 30px; text-align: center; letter-spacing: 1px; flex-shrink: 0; }
     .footnote a { color: rgba(255,255,255,0.85); text-decoration: underline; }
@@ -409,19 +441,24 @@
 
   <div id="name-screen">
     <div class="home-shell">
-      <div class="logo-wrap">
-        <img src="bunnylogo.png" alt="bunnychat">
+      <div class="brand-block">
+        <div class="logo-wrap">
+          <img src="bunnylogo.png" alt="bunnychat">
+        </div>
+        <div id="storage-warning" style="display:none; font-size:11px; color:rgba(255,80,80,0.9); background:rgba(255,255,255,0.15); border-radius:12px; padding:8px 12px; margin-bottom:14px; text-align:center; letter-spacing:0.3px;">
+          ⚠ this browser is blocking site storage, so refreshing will drop you back here instead of reconnecting. check Settings → Safari → Privacy & Security, or turn off Private Browsing.
+        </div>
+        <h2>bunnychat</h2>
+        <div class="subtitle">for paranoid bunnies to discuss their secret carrot stash 🥕</div>
       </div>
-      <div id="storage-warning" style="display:none; font-size:11px; color:rgba(255,80,80,0.9); background:rgba(255,255,255,0.15); border-radius:12px; padding:8px 12px; margin-bottom:14px; text-align:center; letter-spacing:0.3px;">
-        ⚠ this browser is blocking site storage, so refreshing will drop you back here instead of reconnecting. check Settings → Safari → Privacy & Security, or turn off Private Browsing.
+      <div class="form-block">
+        <label class="field-label" for="name-input">your name</label>
+        <input type="text" id="name-input" placeholder="enter your name" maxlength="20">
+        <label class="field-label" for="code-input">bunny code 🔑</label>
+        <input type="text" id="code-input" placeholder="enter or make your secret code" maxlength="40">
+        <p class="code-hint">same code = same garden | share it with your&nbsp;bunny 🐇</p>
+        <button id="join-btn">✦ enter ✦</button>
       </div>
-      <h2> bunnychat </h2>
-      <label class="field-label" for="name-input">your name</label>
-      <input type="text" id="name-input" placeholder="enter your name" maxlength="20">
-      <label class="field-label" for="code-input">bunny code 🔑</label>
-      <input type="text" id="code-input" placeholder="enter or make your secret code" maxlength="40">
-      <p class="code-hint">same code = same garden | share it with your&nbsp;bunny 🐇</p>
-      <button id="join-btn">✦ enter ✦</button>
       <footer class="footnote"><a href="how-to.html">✦ how to bunny 💭✦</a></footer>
     </div>
   </div>
