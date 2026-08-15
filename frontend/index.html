@@ -487,49 +487,50 @@
     padding-left: 18px;
     padding-right: 18px;
   }
-  /* ── Smaller mobile login card ── */
-@media (max-width: 679px) {
-  #name-screen .form-block {
-    width: calc(100% - 32px) !important;
-    max-width: 340px !important;
-    box-sizing: border-box;
-    padding: 16px 16px 18px !important;
-    border-radius: 20px;
-  }
-
-  #name-screen .brand-block {
-    margin-bottom: 28px !important;
-  }
-
-  #name-screen .logo-wrap {
-    width: min(112px, 30vw) !important;
-    margin-bottom: 10px !important;
-  }
-
-  #name-screen h2 {
-    font-size: clamp(26px, 7vw, 38px) !important;
-    margin-bottom: 5px !important;
-  }
-
-  #name-screen .subtitle {
-    font-size: 10px !important;
-  }
-
-  #name-screen #name-input,
-  #name-screen #code-input {
-    padding: 10px 14px !important;
-    margin-bottom: 10px !important;
-  }
-
-  #name-screen #join-btn {
-    padding: 11px !important;
-  }
-
-  #name-screen .footnote {
-    margin-top: 18px !important;
-  }
 }
-}
+  
+    /* ── Compact mobile login form ── */
+    @media (max-width: 679px) {
+      #name-screen .form-block {
+        width: min(340px, calc(100vw - 48px)) !important;
+        max-width: 340px !important;
+        box-sizing: border-box !important;
+        padding: 16px 16px 18px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+
+      #name-screen .brand-block {
+        margin-bottom: 24px !important;
+      }
+
+      #name-screen .logo-wrap {
+        width: min(112px, 30vw) !important;
+        margin-bottom: 10px !important;
+      }
+
+      #name-screen #name-input,
+      #name-screen #code-input {
+        box-sizing: border-box !important;
+        padding: 10px 14px !important;
+        margin-bottom: 10px !important;
+      }
+
+      #name-screen .code-hint {
+        margin-top: -5px !important;
+        margin-bottom: 6px !important;
+      }
+
+      #name-screen #join-btn {
+        padding: 11px !important;
+        margin-top: 2px !important;
+      }
+
+      #name-screen .footnote {
+        margin-top: 16px !important;
+      }
+    }
+
   </style>
 </head>
 <body>
