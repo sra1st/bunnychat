@@ -161,6 +161,11 @@ wss.on('connection', function(ws, request) {
   ws.roomCode = null;
   ws.userName = null;
   ws.hasJoined = false;
+  ws.isAlive = true;
+
+  ws.on('pong', function() {
+    ws.isAlive = true;
+  });
 
   ws.on('message', function(data) {
 
@@ -325,6 +330,27 @@ wss.on('connection', function(ws, request) {
     removeFromRoom(ws);
   });
 
+});
+
+// Every 30s, ping each connection. If one didn't respond to the *previous*
+// ping (isAlive still false), it's dead — terminate it so removeFromRoom
+// runs and, after the grace period, peers get notified it's really gone.
+// Without this, a crashed browser or dropped network (as opposed to a
+// clean tab close, which sends a proper close frame) could sit forever
+// without the server ever knowing the connection is gone.
+const HEARTBEAT_INTERVAL_MS = 30000;
+const heartbeatInterval = setInterval(function() {
+  wss.clients.forEach(function(ws) {
+    if (ws.isAlive === false) {
+      return ws.terminate();
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, HEARTBEAT_INTERVAL_MS);
+
+wss.on('close', function() {
+  clearInterval(heartbeatInterval);
 });
 
 
