@@ -123,7 +123,10 @@
 
     #header { padding: 22px 16px 12px; text-align: center; -webkit-flex-shrink: 0; flex-shrink: 0; position: relative; }
     #leave-btn {
-      position: absolute; left: 14px; top: 50%; -webkit-transform: translateY(-50%); transform: translateY(-50%);
+      position: fixed;
+left: 14px;
+top: 14px;
+transform: none;
       display: -webkit-box; display: -webkit-flex; display: flex;
       -webkit-box-align: center; -webkit-align-items: center; align-items: center;
       gap: 8px;
@@ -150,7 +153,7 @@
     #leave-btn .leave-label { display: inline-block; }
     @media (max-width: 640px) {
       #leave-btn {
-        left: 12px;
+        left: 14px;
         padding: 10px;
         width: 44px;
         height: 44px;
@@ -575,6 +578,22 @@
         box-sizing: border-box;
       }
     }
+    /* ── Hop off: top-left on every device ── */
+#leave-btn {
+  position: fixed !important;
+  top: 14px !important;
+  left: 14px !important;
+  transform: none !important;
+  z-index: 1000;
+}
+
+#leave-btn:hover {
+  transform: scale(1.02) !important;
+}
+
+#leave-btn:active {
+  transform: scale(0.98) !important;
+}
   </style>
 </head>
 <body>
