@@ -161,7 +161,7 @@
       #leave-btn .leave-label { display: none; }
       #leave-btn .leave-icon { font-size: 18px; }
     }
-    #header h1 { font-family: 'Nunito', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: 1px; text-shadow: 0 0 20px rgba(255,255,255,0.4); }
+    #top-peek { display: block; width: min(220px, 55vw); height: auto; margin: 0 auto; flex-shrink: 0; }
     #status { font-size: 11px; margin-top: 6px; color: rgba(255,255,255,0.6); letter-spacing: 1px; }
     #status.connected { color: rgba(255,255,255,0.95); }
     #status.disconnected { color: rgba(255,255,255,0.4); }
@@ -240,6 +240,7 @@
       -webkit-appearance: none;
     }
 
+    .sender-name { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.65); margin: 0 0 3px 4px; letter-spacing: 0.3px; }
     .message .bubble-wrap {
       position: relative;
       display: inline-block;
@@ -334,8 +335,8 @@
     line-height: 1.65;
   }
 
-  #header h1 {
-    font-size: 32px;
+  #top-peek {
+    width: min(280px, 20vw);
   }
 
   #status,
@@ -604,9 +605,9 @@
   </div>
 
   <div id="app">
+    <img id="top-peek" src="upsidepeek.png" alt="">
     <div id="header">
       <button id="leave-btn" onclick="leaveChat()" title="hop off 🐇" aria-label="hop off 🐇"><span class="leave-icon">🚪</span><span class="leave-label">hop off 🐇</span></button>
-      <h1>✦ 🐇💬 ✦</h1>
       <div id="status" class="disconnected">connecting...</div>
       <div id="presence"></div>
     </div>
@@ -635,6 +636,23 @@
 
   <script>
     var WS_URL = 'wss://bunnychat.onrender.com';
+    // Same backend, over plain HTTPS, for the push-subscription endpoints.
+    var PUSH_API_URL = WS_URL.replace(/^wss:\/\//, 'https://').replace(/^ws:\/\//, 'http://');
+    // Public VAPID key for this deployment (safe to expose — it's the
+    // public half of the keypair; only the private half on the server
+    // can actually sign push messages).
+    var VAPID_PUBLIC_KEY = 'BDNp9cW764pLS8BjU0m5tjc1khyDWzDk--OZReiUavkExKBcJPblV6ifT-7oZz1tB-dt9x-3zANtqWdgN1C97zs';
+
+    function urlBase64ToUint8Array(base64String) {
+      var padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+      var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      var rawData = window.atob(base64);
+      var outputArray = new Uint8Array(rawData.length);
+      for (var i = 0; i < rawData.length; i++) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
 
     var starData = [
       [5,8],[12,22],[20,5],[28,40],[35,15],[42,60],[50,30],[58,10],[65,50],[72,25],
@@ -662,6 +680,7 @@
     var hasJoined = false;
     var isConnecting = false;
     var lastPresenceCount = null;
+    var currentRoomNames = [];
     var notifPermission = false;
     var clientId = getOrCreateClientId();
 
@@ -864,11 +883,68 @@
     }
     // ── end Emoji Reactions ──────────────────────────────────────────────────
 
+    var swRegistration = null;
+
+    function registerServiceWorker() {
+      if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+      return navigator.serviceWorker.register('sw.js').then(function(reg) {
+        swRegistration = reg;
+        return reg;
+      }).catch(function(e) {
+        console.warn('bunnychat: service worker registration failed', e);
+        return null;
+      });
+    }
+    // Register early (not gated on entering a room) so it's ready by the
+    // time we try to subscribe to push.
+    registerServiceWorker();
+
+    function subscribeToPush() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      (swRegistration ? Promise.resolve(swRegistration) : registerServiceWorker()).then(function(reg) {
+        if (!reg) return;
+        return reg.pushManager.getSubscription().then(function(existing) {
+          if (existing) return existing;
+          return reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+          });
+        });
+      }).then(function(subscription) {
+        if (!subscription) return;
+        fetch(PUSH_API_URL + '/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomCode: roomCode, clientId: clientId, subscription: subscription })
+        }).catch(function(e) { console.warn('bunnychat: push subscribe failed', e); });
+      }).catch(function(e) {
+        // Common on browsers/devices without real push support (some
+        // in-app browsers, some older Android WebViews) — not fatal,
+        // the app still works without push.
+        console.warn('bunnychat: could not subscribe to push', e);
+      });
+    }
+
+    function unsubscribeFromPush() {
+      try {
+        fetch(PUSH_API_URL + '/subscribe', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomCode: roomCode, clientId: clientId })
+        }).catch(function() {});
+      } catch (e) {}
+    }
+
     function requestNotifPermission() {
       if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission(function(perm) { notifPermission = perm === 'granted'; });
+        Notification.requestPermission(function(perm) {
+          notifPermission = perm === 'granted';
+          if (notifPermission) subscribeToPush();
+        });
       } else if ('Notification' in window && Notification.permission === 'granted') {
         notifPermission = true;
+        subscribeToPush();
       }
     }
 
@@ -937,6 +1013,38 @@
       return hours + ':' + (minutes < 10 ? '0' : '') + minutes;
     }
 
+    function applyServerHistory(serverMessages) {
+      // The server is authoritative for actual chat messages (so a late
+      // joiner sees everything already said in the room) — but we keep
+      // locally-recorded system entries ("you hopped in" etc) as-is,
+      // since those are inherently about this browser's own session.
+      var systemEntries = [];
+      for (var i = 0; i < messageHistory.length; i++) {
+        if (messageHistory[i].type === 'system') systemEntries.push(messageHistory[i]);
+      }
+      var newMessageEntries = (serverMessages || []).map(function(sm) {
+        return {
+          type: 'message',
+          id: sm.id,
+          name: sm.name,
+          text: sm.text,
+          time: sm.time,
+          replyTo: sm.replyTo || null,
+          isSent: sm.name === userName,
+          readState: 'sent',
+          reactions: sm.reactions || {}
+        };
+      });
+      messageHistory = newMessageEntries.concat(systemEntries);
+      messageHistory.sort(function(a, b) {
+        var ta = a.time ? new Date(a.time).getTime() : 0;
+        var tb = b.time ? new Date(b.time).getTime() : 0;
+        return ta - tb;
+      });
+      saveHistory();
+      renderHistory();
+    }
+
     function renderHistory() {
       messagesDiv.innerHTML = '';
       messageElements = {};
@@ -967,6 +1075,7 @@
     function leaveChat() {
       clearSession();
       clearHistory();
+      unsubscribeFromPush();
       if (ws && ws.readyState === 1) {
         try { ws.send(JSON.stringify({ type: 'leave' })); } catch(e) {}
       }
@@ -1028,7 +1137,9 @@
             acknowledgeRead(data.id);
           }
         } else if (data.type === 'presence') {
-          updatePresence(data.count);
+          updatePresence(data.count, data.names);
+        } else if (data.type === 'history') {
+          applyServerHistory(data.messages);
         } else if (data.type === 'left') {
           var leftText = data.name + ' hopped away 🐇';
           addSystemMessage(leftText);
@@ -1076,7 +1187,8 @@
       };
     }
 
-    function updatePresence(count) {
+    function updatePresence(count, names) {
+      currentRoomNames = names || [];
       if (count >= 2) {
         presenceDiv.textContent = '✦ somebunny is here';
         presenceDiv.className = 'active';
@@ -1214,9 +1326,18 @@
       sendTypingState(false);
       if (typingTimer) { clearTimeout(typingTimer); typingTimer = null; }
       clearReplyTarget();
+      // Re-focus so the mobile keyboard stays open after sending, matching
+      // Messenger/WhatsApp-style behavior instead of dismissing it.
+      msgInput.focus();
     }
 
     document.getElementById('send-btn').addEventListener('click', sendMessage);
+    // On mobile, tapping a non-input button can steal focus from the text
+    // field an instant before 'click' fires, which is what actually
+    // dismisses the keyboard. Preventing default on the earlier
+    // pointer/touch events stops the input from ever losing focus.
+    document.getElementById('send-btn').addEventListener('mousedown', function(e) { e.preventDefault(); });
+    document.getElementById('send-btn').addEventListener('touchstart', function(e) { e.preventDefault(); }, { passive: false });
     msgInput.addEventListener('keydown', function(e) {
       if (e.keyCode === 13 && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
@@ -1252,7 +1373,12 @@
             '<div>' + escapeHtml(item.replyTo.text) + '</div>' +
           '</div>';
       }
+      var senderLabel = '';
+      if (!item.isSent && item.name && currentRoomNames.length > 2) {
+        senderLabel = '<div class="sender-name">' + escapeHtml(item.name) + '</div>';
+      }
       div.innerHTML =
+        senderLabel +
         '<div class="bubble-wrap">' +
           '<button type="button" class="reply-btn" aria-label="reply">↩</button>' +
           '<div class="bubble">' +
@@ -1295,6 +1421,57 @@
           }, { passive: true });
         }
       }
+      // Mobile swipe-to-reply — swipe a bubble to the right, Messenger/
+      // Telegram-style, to reply to that message.
+      if (isMobile) {
+        var wrapEl = div.querySelector('.bubble-wrap');
+        if (wrapEl) {
+          (function() {
+            var SWIPE_THRESHOLD = 56;
+            var SWIPE_MAX = 76;
+            var swipeStartX = null;
+            var swipeStartY = null;
+            var swipeCurrentX = 0;
+            var swiping = false;
+            var swipeCancelled = false;
+            wrapEl.addEventListener('touchstart', function(e) {
+              if (e.touches.length !== 1) return;
+              swipeStartX = e.touches[0].clientX;
+              swipeStartY = e.touches[0].clientY;
+              swiping = true;
+              swipeCancelled = false;
+            }, { passive: true });
+            wrapEl.addEventListener('touchmove', function(e) {
+              if (!swiping || swipeStartX === null) return;
+              var dx = e.touches[0].clientX - swipeStartX;
+              var dy = e.touches[0].clientY - swipeStartY;
+              // If the gesture is more vertical than horizontal, this is a
+              // scroll, not a swipe — bail out and let the page scroll.
+              if (!swipeCancelled && Math.abs(dy) > Math.abs(dx) + 6) {
+                swipeCancelled = true;
+                wrapEl.style.transform = '';
+                return;
+              }
+              if (swipeCancelled) return;
+              var clamped = Math.max(0, Math.min(dx, SWIPE_MAX));
+              swipeCurrentX = clamped;
+              wrapEl.style.transition = 'none';
+              wrapEl.style.transform = 'translateX(' + clamped + 'px)';
+            }, { passive: true });
+            wrapEl.addEventListener('touchend', function() {
+              if (!swipeCancelled && swiping && swipeCurrentX > SWIPE_THRESHOLD) {
+                setReplyTarget(item);
+                if (navigator.vibrate) { try { navigator.vibrate(10); } catch(e) {} }
+              }
+              wrapEl.style.transition = 'transform 0.2s ease';
+              wrapEl.style.transform = 'translateX(0)';
+              swiping = false;
+              swipeStartX = null;
+              swipeCurrentX = 0;
+            });
+          })();
+        }
+      }
       messagesDiv.appendChild(div);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
       // Render saved reactions (from history or pre-populated data)
@@ -1330,7 +1507,7 @@
       messagesDiv.appendChild(div);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
       if (shouldPersist) {
-        messageHistory.push({ type: 'system', text: text });
+        messageHistory.push({ type: 'system', text: text, time: new Date().toISOString() });
         saveHistory();
       }
     }

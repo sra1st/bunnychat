@@ -1,7 +1,86 @@
 const http = require('http');
 const WebSocket = require('ws');
+const webpush = require('web-push');
+
+// ── Web Push setup ──────────────────────────────────────────────────────
+// These are real keys generated for this deployment. VAPID_PRIVATE_KEY
+// should be set as an environment variable on Render (never commit a
+// private key to the repo) — this hardcoded value is only a fallback so
+// the server doesn't crash if the env var is missing.
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BDNp9cW764pLS8BjU0m5tjc1khyDWzDk--OZReiUavkExKBcJPblV6ifT-7oZz1tB-dt9x-3zANtqWdgN1C97zs';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '-w1v8VYjQkUDE9phIn7Sf8ZrQb7AeIbgfhvemYiIfjg';
+webpush.setVapidDetails('mailto:admin@bunnychat.netlify.app', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+
+// Allow the frontend origin to call the subscribe endpoint.
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://bunnychat.netlify.app';
+
+function setCors(res) {
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
+function readJsonBody(req, callback) {
+  let body = '';
+  let tooBig = false;
+  req.on('data', function(chunk) {
+    body += chunk;
+    if (body.length > 64 * 1024) { tooBig = true; req.destroy(); }
+  });
+  req.on('end', function() {
+    if (tooBig) return callback(new Error('payload too large'));
+    try {
+      callback(null, JSON.parse(body || '{}'));
+    } catch (e) {
+      callback(e);
+    }
+  });
+}
 
 const server = http.createServer((req, res) => {
+  const url = req.url.split('?')[0];
+
+  if (req.method === 'OPTIONS') {
+    setCors(res);
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  if (req.method === 'POST' && url === '/subscribe') {
+    setCors(res);
+    readJsonBody(req, function(err, data) {
+      if (err) { res.writeHead(400); res.end('bad request'); return; }
+      const roomCode = data.roomCode;
+      const clientId = data.clientId;
+      const subscription = data.subscription;
+      if (!isNonEmptyString(roomCode, MAX_CODE_LEN) || !isNonEmptyString(clientId, MAX_ID_LEN) ||
+          !subscription || typeof subscription !== 'object' || !subscription.endpoint) {
+        res.writeHead(400); res.end('invalid subscription'); return;
+      }
+      const room = getRoom(roomCode);
+      room.pushSubs[clientId] = subscription;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    });
+    return;
+  }
+
+  if (req.method === 'DELETE' && url === '/subscribe') {
+    setCors(res);
+    readJsonBody(req, function(err, data) {
+      if (err) { res.writeHead(400); res.end('bad request'); return; }
+      const roomCode = data.roomCode;
+      const clientId = data.clientId;
+      if (isNonEmptyString(roomCode, MAX_CODE_LEN) && isNonEmptyString(clientId, MAX_ID_LEN) && rooms[roomCode]) {
+        delete rooms[roomCode].pushSubs[clientId];
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    });
+    return;
+  }
+
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('bunny chat server running');
 });
@@ -23,6 +102,10 @@ const rooms = {};
 // How long we hold off announcing a departure, in case it's just a page
 // refresh reconnecting rather than someone actually leaving.
 const RECONNECT_GRACE_MS = 5000;
+
+// Cap how many chat messages a room remembers server-side, so a
+// long-running room's memory footprint stays bounded.
+const MAX_ROOM_MESSAGES = 200;
 
 // ── input limits ────────────────────────────────────────────────────────
 const MAX_NAME_LEN = 20;
@@ -62,7 +145,13 @@ function getRoom(code) {
       activeByClientId: {},
       // clientIds whose departure announcement is delayed, in case they
       // reconnect (e.g. a page refresh) before the grace period ends.
-      pendingLeaves: {}
+      pendingLeaves: {},
+      // Server-side message history so anyone who joins (even late) sees
+      // what was already said — capped, oldest dropped first.
+      messages: [],
+      messagesById: {},
+      // Web Push subscriptions, keyed by clientId.
+      pushSubs: {}
     };
   }
   return rooms[code];
@@ -101,10 +190,38 @@ function broadcastPresence(roomCode) {
   const room = rooms[roomCode];
   if (!room) return;
 
+  const names = room.clients.map(function(c) { return c.userName; }).filter(Boolean);
   room.clients.forEach(function(client) {
     safeSend(client, {
       type: 'presence',
-      count: room.clients.length
+      count: room.clients.length,
+      names: names
+    });
+  });
+}
+
+function addRoomMessage(room, messageObj) {
+  room.messages.push(messageObj);
+  room.messagesById[messageObj.id] = messageObj;
+  while (room.messages.length > MAX_ROOM_MESSAGES) {
+    const dropped = room.messages.shift();
+    if (dropped) delete room.messagesById[dropped.id];
+  }
+}
+
+function sendPushToRoom(roomCode, room, senderClientId, payload) {
+  const subEntries = Object.keys(room.pushSubs);
+  subEntries.forEach(function(clientId) {
+    if (clientId === senderClientId) return;
+    const subscription = room.pushSubs[clientId];
+    webpush.sendNotification(subscription, JSON.stringify(payload)).catch(function(err) {
+      // 410/404 means the subscription is gone (uninstalled, permissions
+      // revoked, etc) — stop trying to push to it.
+      if (err && (err.statusCode === 410 || err.statusCode === 404)) {
+        delete room.pushSubs[clientId];
+      } else {
+        console.log('PUSH ERROR:', err && err.message);
+      }
     });
   });
 }
@@ -126,6 +243,11 @@ function removeFromRoom(ws, immediate) {
     delete room.activeByClientId[clientId];
   }
 
+  function finalizeDeparture() {
+    if (clientId) delete room.pushSubs[clientId];
+    if (room.clients.length === 0) delete rooms[roomCode];
+  }
+
   if (immediate || !clientId) {
     // Explicit "hop off", or a connection we have no clientId to track
     // reconnects for — announce the departure right away.
@@ -133,14 +255,14 @@ function removeFromRoom(ws, immediate) {
     if (userName) {
       broadcast(roomCode, { type: 'left', name: userName }, ws);
     }
-    if (room.clients.length === 0) delete rooms[roomCode];
+    finalizeDeparture();
   } else if (isCurrentlyActive) {
     // Hold off announcing — this might just be a page refresh reconnecting.
     room.pendingLeaves[clientId] = {
       timer: setTimeout(function() {
         delete room.pendingLeaves[clientId];
         if (userName) broadcast(roomCode, { type: 'left', name: userName });
-        if (room.clients.length === 0) delete rooms[roomCode];
+        finalizeDeparture();
       }, RECONNECT_GRACE_MS)
     };
   } else {
@@ -212,6 +334,10 @@ wss.on('connection', function(ws, request) {
 
       broadcastPresence(ws.roomCode);
 
+      // Send this client the room's existing message history so joining
+      // late (or reconnecting) still shows what was already said.
+      safeSend(ws, { type: 'history', messages: room.messages });
+
       if (!isReconnect) {
         room.clients.forEach(function(client) {
           if (client !== ws) {
@@ -258,14 +384,32 @@ wss.on('connection', function(ws, request) {
 
       room.messageSenders[id] = ws;
 
+      const time = msg.time || new Date().toISOString();
+      const replyTo = sanitizeReplyTo(msg.replyTo);
+
+      addRoomMessage(room, {
+        id: id,
+        name: ws.userName,
+        text: msg.text,
+        time: time,
+        replyTo: replyTo,
+        reactions: {}
+      });
+
       broadcast(ws.roomCode, {
         type:'message',
         id:id,
         name:ws.userName,
         text:msg.text,
-        time:msg.time || new Date().toISOString(),
-        replyTo: sanitizeReplyTo(msg.replyTo)
+        time:time,
+        replyTo: replyTo
       }, ws);
+
+      sendPushToRoom(ws.roomCode, room, ws.clientId, {
+        title: 'bunnychat 🐰💬',
+        body: ws.userName + ': ' + msg.text,
+        roomCode: ws.roomCode
+      });
 
       return;
     }
@@ -277,6 +421,25 @@ wss.on('connection', function(ws, request) {
       if (!isNonEmptyString(msg.messageId, MAX_ID_LEN)) return;
       if (!isNonEmptyString(msg.emoji, MAX_EMOJI_LEN)) return;
       const action = msg.action === 'remove' ? 'remove' : 'add';
+
+      const room = rooms[ws.roomCode];
+      const targetMessage = room && room.messagesById[msg.messageId];
+      if (targetMessage) {
+        if (!targetMessage.reactions) targetMessage.reactions = {};
+        const emoji = msg.emoji;
+        const who = ws.userName;
+        if (action === 'remove') {
+          if (targetMessage.reactions[emoji]) {
+            targetMessage.reactions[emoji] = targetMessage.reactions[emoji].filter(function(u) { return u !== who; });
+            if (!targetMessage.reactions[emoji].length) delete targetMessage.reactions[emoji];
+          }
+        } else {
+          if (!targetMessage.reactions[emoji]) targetMessage.reactions[emoji] = [];
+          if (targetMessage.reactions[emoji].indexOf(who) === -1) {
+            targetMessage.reactions[emoji].push(who);
+          }
+        }
+      }
 
       broadcast(ws.roomCode, {
         type:'reaction',
@@ -358,4 +521,5 @@ const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, function() {
   console.log('Server listening on port', PORT);
+  console.log('VAPID public key:', VAPID_PUBLIC_KEY);
 });
