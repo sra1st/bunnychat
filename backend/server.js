@@ -7,9 +7,25 @@ const webpush = require('web-push');
 // should be set as an environment variable on Render (never commit a
 // private key to the repo) — this hardcoded value is only a fallback so
 // the server doesn't crash if the env var is missing.
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BDNp9cW764pLS8BjU0m5tjc1khyDWzDk--OZReiUavkExKBcJPblV6ifT-7oZz1tB-dt9x-3zANtqWdgN1C97zs';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '-w1v8VYjQkUDE9phIn7Sf8ZrQb7AeIbgfhvemYiIfjg';
-webpush.setVapidDetails('mailto:admin@bunnychat.netlify.app', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+function cleanKey(v) {
+  // Strip whitespace/newlines and any stray surrounding quotes — the most
+  // common ways a pasted env var value ends up subtly wrong on Render.
+  if (typeof v !== 'string') return v;
+  return v.trim().replace(/^['"]|['"]$/g, '');
+}
+const VAPID_PUBLIC_KEY = cleanKey(process.env.VAPID_PUBLIC_KEY) || 'BDNp9cW764pLS8BjU0m5tjc1khyDWzDk--OZReiUavkExKBcJPblV6ifT-7oZz1tB-dt9x-3zANtqWdgN1C97zs';
+const VAPID_PRIVATE_KEY = cleanKey(process.env.VAPID_PRIVATE_KEY) || '-w1v8VYjQkUDE9phIn7Sf8ZrQb7AeIbgfhvemYiIfjg';
+
+// A bad/misconfigured VAPID key must NEVER take down the whole server —
+// chat, WebSockets, everything else should keep working even if push
+// notifications end up disabled. Only the push feature itself degrades.
+let pushEnabled = true;
+try {
+  webpush.setVapidDetails('mailto:admin@bunnychat.netlify.app', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+} catch (e) {
+  pushEnabled = false;
+  console.error('bunnychat: VAPID key setup failed, push notifications are DISABLED. Chat still works normally. Error:', e.message);
+}
 
 // Allow the frontend origin to call the subscribe endpoint.
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://bunnychat.netlify.app';
@@ -49,6 +65,11 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'POST' && url === '/subscribe') {
     setCors(res);
+    if (!pushEnabled) {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'push notifications are not configured on this server' }));
+      return;
+    }
     readJsonBody(req, function(err, data) {
       if (err) { res.writeHead(400); res.end('bad request'); return; }
       const roomCode = data.roomCode;
@@ -210,6 +231,7 @@ function addRoomMessage(room, messageObj) {
 }
 
 function sendPushToRoom(roomCode, room, senderClientId, payload) {
+  if (!pushEnabled) return;
   const subEntries = Object.keys(room.pushSubs);
   subEntries.forEach(function(clientId) {
     if (clientId === senderClientId) return;
