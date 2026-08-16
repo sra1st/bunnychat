@@ -161,7 +161,7 @@
       #leave-btn .leave-label { display: none; }
       #leave-btn .leave-icon { font-size: 18px; }
     }
-    #top-peek { display: block; width: min(220px, 55vw); height: auto; margin: 0 auto; flex-shrink: 0; }
+    #top-peek { display: block; width: min(90px, 26vw); height: auto; margin: 0 auto; flex-shrink: 0; }
     #status { font-size: 11px; margin-top: 6px; color: rgba(255,255,255,0.6); letter-spacing: 1px; }
     #status.connected { color: rgba(255,255,255,0.95); }
     #status.disconnected { color: rgba(255,255,255,0.4); }
@@ -336,7 +336,7 @@
   }
 
   #top-peek {
-    width: min(280px, 20vw);
+    width: min(110px, 7vw);
   }
 
   #status,
@@ -1331,13 +1331,28 @@
       msgInput.focus();
     }
 
-    document.getElementById('send-btn').addEventListener('click', sendMessage);
-    // On mobile, tapping a non-input button can steal focus from the text
-    // field an instant before 'click' fires, which is what actually
-    // dismisses the keyboard. Preventing default on the earlier
-    // pointer/touch events stops the input from ever losing focus.
-    document.getElementById('send-btn').addEventListener('mousedown', function(e) { e.preventDefault(); });
-    document.getElementById('send-btn').addEventListener('touchstart', function(e) { e.preventDefault(); }, { passive: false });
+    (function() {
+      var sendBtn = document.getElementById('send-btn');
+      var suppressNextClick = false;
+      // On mobile, tapping a non-input button can steal focus from the
+      // text field an instant before the synthesized 'click' event fires
+      // (that's what closes the keyboard), and relying on that synthetic
+      // click can also occasionally just not fire at all on some mobile
+      // browsers, which is why the button sometimes did nothing. Handling
+      // 'touchend' directly is the more reliable pattern: it fires
+      // immediately and consistently, and preventDefault on it stops the
+      // browser's own click from double-firing afterward.
+      sendBtn.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        suppressNextClick = true;
+        sendMessage();
+        setTimeout(function() { suppressNextClick = false; }, 400);
+      }, { passive: false });
+      sendBtn.addEventListener('click', function() {
+        if (suppressNextClick) { suppressNextClick = false; return; }
+        sendMessage();
+      });
+    })();
     msgInput.addEventListener('keydown', function(e) {
       if (e.keyCode === 13 && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
@@ -1421,8 +1436,11 @@
           }, { passive: true });
         }
       }
-      // Mobile swipe-to-reply — swipe a bubble to the right, Messenger/
-      // Telegram-style, to reply to that message.
+      // Mobile swipe-to-reply — swipe a bubble either direction,
+      // Messenger/Telegram-style, to reply to that message. Either
+      // direction works since sent bubbles sit on the right and received
+      // ones on the left — a single fixed direction wouldn't feel natural
+      // for both.
       if (isMobile) {
         var wrapEl = div.querySelector('.bubble-wrap');
         if (wrapEl) {
@@ -1453,13 +1471,13 @@
                 return;
               }
               if (swipeCancelled) return;
-              var clamped = Math.max(0, Math.min(dx, SWIPE_MAX));
+              var clamped = Math.max(-SWIPE_MAX, Math.min(dx, SWIPE_MAX));
               swipeCurrentX = clamped;
               wrapEl.style.transition = 'none';
               wrapEl.style.transform = 'translateX(' + clamped + 'px)';
             }, { passive: true });
             wrapEl.addEventListener('touchend', function() {
-              if (!swipeCancelled && swiping && swipeCurrentX > SWIPE_THRESHOLD) {
+              if (!swipeCancelled && swiping && Math.abs(swipeCurrentX) > SWIPE_THRESHOLD) {
                 setReplyTarget(item);
                 if (navigator.vibrate) { try { navigator.vibrate(10); } catch(e) {} }
               }

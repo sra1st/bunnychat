@@ -265,31 +265,41 @@ function removeFromRoom(ws, immediate) {
     delete room.activeByClientId[clientId];
   }
 
-  function finalizeDeparture() {
-    if (clientId) delete room.pushSubs[clientId];
-    if (room.clients.length === 0) delete rooms[roomCode];
-  }
-
-  if (immediate || !clientId) {
-    // Explicit "hop off", or a connection we have no clientId to track
-    // reconnects for — announce the departure right away.
-    if (clientId) clearPendingLeave(room, clientId);
+  if (immediate) {
+    // Explicit "hop off" (the leave-button click) — the ONLY event that
+    // announces a departure to the room and tears down the push
+    // subscription. A merely dropped connection — refresh, backgrounded
+    // or closed installed app, phone restart, network blip — must never
+    // look like a "hop off" to everyone else, and must keep the person
+    // eligible for push notifications until they actually choose to leave.
+    if (clientId) {
+      clearPendingLeave(room, clientId);
+      delete room.pushSubs[clientId];
+    }
     if (userName) {
       broadcast(roomCode, { type: 'left', name: userName }, ws);
     }
-    finalizeDeparture();
-  } else if (isCurrentlyActive) {
-    // Hold off announcing — this might just be a page refresh reconnecting.
+    if (room.clients.length === 0) delete rooms[roomCode];
+  } else if (clientId && isCurrentlyActive) {
+    // Passive disconnect of the currently-active connection for this
+    // identity. We keep a short window purely to avoid rebroadcasting a
+    // duplicate "hopped in" message if they reconnect quickly (e.g. a
+    // page refresh) — nothing more. No departure is ever announced here,
+    // and the push subscription is left untouched, so notifications keep
+    // working no matter how long they're away for.
     room.pendingLeaves[clientId] = {
       timer: setTimeout(function() {
         delete room.pendingLeaves[clientId];
-        if (userName) broadcast(roomCode, { type: 'left', name: userName });
-        finalizeDeparture();
+        if (room.clients.length === 0 && Object.keys(room.pendingLeaves).length === 0) {
+          delete rooms[roomCode];
+        }
       }, RECONNECT_GRACE_MS)
     };
   } else {
-    // A newer connection for this identity already took over (the join
-    // arrived before this close was processed) — nothing to announce.
+    // Either no clientId to track, or a newer connection for this
+    // identity already took over (this close was processed after that
+    // newer join) — nothing to announce or schedule, just clean up if
+    // the room is now genuinely empty.
     if (room.clients.length === 0 && Object.keys(room.pendingLeaves).length === 0) {
       delete rooms[roomCode];
     }
