@@ -657,6 +657,15 @@ transform: none;
     var WS_URL = 'wss://bunnychat.onrender.com';
     // Same backend, over plain HTTPS, for the push-subscription endpoints.
     var PUSH_API_URL = WS_URL.replace(/^wss:\/\//, 'https://').replace(/^ws:\/\//, 'http://');
+
+    // Render's free tier spins the backend down after ~15 min idle, and
+    // the next request has to cold-boot it (can take 30-90s). Pinging it
+    // the instant the page loads — rather than waiting until the person
+    // has typed a name/code and hit enter — means the cold start happens
+    // in parallel with them filling out the form, not after.
+    try {
+      fetch(PUSH_API_URL + '/', { mode: 'no-cors' }).catch(function() {});
+    } catch (e) {}
     // Public VAPID key for this deployment (safe to expose — it's the
     // public half of the keypair; only the private half on the server
     // can actually sign push messages).
