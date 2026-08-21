@@ -121,7 +121,7 @@
     #app { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: none; -webkit-box-orient: vertical; -webkit-flex-direction: column; flex-direction: column; max-width: 600px; margin: 0 auto; z-index: 1; }
     #app.visible { display: -webkit-box; display: -webkit-flex; display: flex; }
 
-    #header { padding: 22px 16px 12px; text-align: center; -webkit-flex-shrink: 0; flex-shrink: 0; position: relative; }
+    #header { padding: 16px 16px 6px; text-align: center; -webkit-flex-shrink: 0; flex-shrink: 0; position: relative; }
     #leave-btn {
       position: fixed;
 left: 14px;
@@ -165,10 +165,10 @@ transform: none;
       #leave-btn .leave-icon { font-size: 18px; }
     }
     #top-peek { display: block; width: min(90px, 26vw); height: auto; margin: 0 auto; flex-shrink: 0; }
-    #status { font-size: 11px; margin-top: 6px; color: rgba(255,255,255,0.6); letter-spacing: 1px; }
+    #status { font-size: 11px; margin-top: 3px; color: rgba(255,255,255,0.6); letter-spacing: 1px; }
     #status.connected { color: rgba(255,255,255,0.95); }
     #status.disconnected { color: rgba(255,255,255,0.4); }
-    #presence { font-size: 11px; margin-top: 3px; letter-spacing: 1px; color: rgba(255,255,255,0.45); }
+    #presence { font-size: 11px; margin-top: 1px; letter-spacing: 1px; color: rgba(255,255,255,0.45); }
     #presence.active { color: rgba(255,255,255,0.9); }
 
     #messages { -webkit-box-flex: 1; -webkit-flex: 1; flex: 1; overflow-y: auto; overflow-x: hidden; padding: 8px 16px 8px 18px; -webkit-overflow-scrolling: touch; position: relative; z-index: 1; scrollbar-width: none; }
@@ -347,8 +347,8 @@ transform: none;
     font-size: 15px;
   }
 
-  #status { margin-top: 10px; }
-  #presence { margin-top: 4px; }
+  #status { margin-top: 5px; }
+  #presence { margin-top: 2px; }
 
   .message .time {
     font-size: 12px;
@@ -356,7 +356,7 @@ transform: none;
 
   /* Header full-width so hop-off btn sits at far screen left, with real
      top/bottom breathing room instead of hugging the screen edge */
-  #header { max-width: 100%; width: 100%; box-sizing: border-box; padding: 40px 16px 20px; }
+  #header { max-width: 100%; width: 100%; box-sizing: border-box; padding: 24px 16px 10px; }
       #reply-preview { max-width: min(1800px, 98vw); margin-left: auto; margin-right: auto; }
       #typing  { max-width: min(1800px, 98vw); margin-left: auto; margin-right: auto; }
       /* Keep the desktop texting UI comfortably grouped instead of spanning the full viewport. */
