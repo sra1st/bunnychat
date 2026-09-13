@@ -3,24 +3,28 @@ const WebSocket = require('ws');
 const webpush = require('web-push');
 
 // ── Web Push setup ──────────────────────────────────────────────────────
-// These are real keys generated for this deployment. VAPID_PRIVATE_KEY
-// should be set as an environment variable on Render (never commit a
-// private key to the repo) — this hardcoded value is only a fallback so
-// the server doesn't crash if the env var is missing.
+// VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY must be set as environment
+// variables on Render — never hardcode a private key in source code,
+// even as a "fallback". If they're missing, push notifications disable
+// themselves gracefully below; the server does not crash and chat still
+// works normally.
 function cleanKey(v) {
   // Strip whitespace/newlines and any stray surrounding quotes — the most
   // common ways a pasted env var value ends up subtly wrong on Render.
   if (typeof v !== 'string') return v;
   return v.trim().replace(/^['"]|['"]$/g, '');
 }
-const VAPID_PUBLIC_KEY = cleanKey(process.env.VAPID_PUBLIC_KEY) || 'BDNp9cW764pLS8BjU0m5tjc1khyDWzDk--OZReiUavkExKBcJPblV6ifT-7oZz1tB-dt9x-3zANtqWdgN1C97zs';
-const VAPID_PRIVATE_KEY = cleanKey(process.env.VAPID_PRIVATE_KEY) || '-w1v8VYjQkUDE9phIn7Sf8ZrQb7AeIbgfhvemYiIfjg';
+const VAPID_PUBLIC_KEY = cleanKey(process.env.VAPID_PUBLIC_KEY);
+const VAPID_PRIVATE_KEY = cleanKey(process.env.VAPID_PRIVATE_KEY);
 
-// A bad/misconfigured VAPID key must NEVER take down the whole server —
-// chat, WebSockets, everything else should keep working even if push
+// A missing/bad VAPID key must NEVER take down the whole server — chat,
+// WebSockets, everything else should keep working even if push
 // notifications end up disabled. Only the push feature itself degrades.
 let pushEnabled = true;
 try {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    throw new Error('VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY environment variables are not set');
+  }
   webpush.setVapidDetails('mailto:admin@bunnychat.netlify.app', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 } catch (e) {
   pushEnabled = false;
@@ -553,5 +557,5 @@ const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, function() {
   console.log('Server listening on port', PORT);
-  console.log('VAPID public key:', VAPID_PUBLIC_KEY);
+  console.log('Push notifications:', pushEnabled ? ('enabled (public key: ' + VAPID_PUBLIC_KEY + ')') : 'disabled');
 });
