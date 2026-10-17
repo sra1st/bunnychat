@@ -5,7 +5,7 @@ Real-time web chat app with private rooms, group chat, presence and push notific
 **Live demo:** https://bunnychat.netlify.app
 
 ![Home screen](docs/Screenshot From 2026-10-17 13-54-02.png)
-![Demo](docs/ezgif-17b329f6d3e624a9.gif)
+![Demo](ezgif-103862e847dd483c.gif)
 
 ## Features
 - Join a room with your name and a secret code
