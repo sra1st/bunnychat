@@ -15,10 +15,9 @@ Real-time web chat app with private rooms, group chat, presence and push notific
 - Web Push notifications (service worker, VAPID)
 - Input validation and payload size limits on the server
 - Mobile-first UI, including an iOS keyboard fix
-- [Describe the encryption accurately, or remove this line]
 
 ## Tech stack
-[Frontend: HTML/CSS/JavaScript, or your actual framework] · Node.js + WebSocket server · Netlify (frontend) · Render (backend)
+Node.js + WebSocket server · Netlify (frontend) · Render (backend)
 
 ## Run locally
 ```bash
@@ -27,7 +26,7 @@ cd bunnychat/backend
 npm install
 node server.js
 ```
-Then open `frontend/index.html` in a browser. [Confirm these steps.]
+Then open `frontend/index.html` in a browser.
 
 ## Project structure
 - `frontend/` — web client
